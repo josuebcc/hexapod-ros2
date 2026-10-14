@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hexápodo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/controls.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="eyebrow">Panel ROS 2</div>
+        <h1>Hexápodo</h1>
+      </div>
+      <a class="button button-compact" href="/servos">Mapa de servos</a>
+    </header>
+
+    <main class="dashboard">
+      <section class="card card-accent movement-panel">
+        <header class="card-header">
+          <div>
+            <div class="eyebrow" id="control-mode-status" aria-live="polite">Sin conexion</div>
+            <h2>Movimiento</h2>
+          </div>
+          <div class="header-actions">
+            <label class="autonomous-toggle">
+              <input type="checkbox" id="autonomous-mode" role="switch" disabled>
+              Modo autonomo
+            </label>
+            <span class="info-chip" id="motion-limit-pill">vx 120 · vy 50 · giro 0.35</span>
+            <button class="button button-toggle is-on" id="motion-elastic-btn" type="button">
+              Elástico: ON
+            </button>
+          </div>
+        </header>
+
+        <div id="manual-controls" inert>
+        <div class="movement-grid">
+          <section class="joystick-section" aria-label="Joystick de traslación">
+            <div class="joystick" id="joy-move">
+              <div class="joystick-crosshair"></div>
+              <div class="joystick-knob" id="jmk"></div>
+            </div>
+            <div class="value-pair">
+              <span>Avance <strong id="vx-v">0.00</strong> mm/s</span>
+              <span>Lateral <strong id="vy-v">0.00</strong> mm/s</span>
+            </div>
+          </section>
+
+          <section class="yaw-section">
+            <div class="control-heading">
+              <div class="eyebrow">Rotación</div>
+              <h3>Giro del cuerpo</h3>
+            </div>
+            <input type="range" min="-350" max="350" step="1" value="0" id="sl-vyaw">
+            <div class="range-legend">
+              <span id="yaw-min-label">-0.35</span>
+              <span id="yaw-mid-label">0.00</span>
+              <span id="yaw-max-label">0.35</span>
+            </div>
+            <div class="metric-inline">Giro <strong id="vyaw-v">0.000</strong> rad/s</div>
+          </section>
+        </div>
+
+        <section class="manual-control">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Entrada precisa</div>
+              <h3>Velocidades directas</h3>
+            </div>
+            <span class="info-chip" id="motion-source-pill">entrada joystick</span>
+          </div>
+          <div class="manual-grid">
+            <label class="number-field" for="manual-vx">
+              <span>Avance</span>
+              <input type="number" step="0.1" value="0" id="manual-vx">
+              <small>mm/s</small>
+            </label>
+            <label class="number-field" for="manual-vy">
+              <span>Lateral</span>
+              <input type="number" step="0.1" value="0" id="manual-vy">
+              <small>mm/s</small>
+            </label>
+            <label class="number-field" for="manual-vyaw">
+              <span>Giro</span>
+              <input type="number" step="0.001" value="0" id="manual-vyaw">
+              <small>rad/s</small>
+            </label>
+            <div class="manual-actions">
+              <button class="button button-primary" id="manual-apply" type="button">Aplicar</button>
+              <button class="button" id="manual-reset" type="button">Poner a cero</button>
+            </div>
+          </div>
+        </section>
+        </div>
+      </section>
+
+      <section class="card gait-panel">
+        <header class="card-header">
+          <div>
+            <div class="eyebrow">Locomoción</div>
+            <h2>Configuración de marcha</h2>
+          </div>
+        </header>
+        <div class="gait-layout">
+          <div>
+            <h3>Modo de marcha</h3>
+            <div class="mode-grid">
+              <button class="mode-button mode-stop active" id="m0" type="button">Stop</button>
+              <button class="mode-button" id="m1" type="button">Tripod</button>
+              <button class="mode-button" id="m2" type="button">Ripple</button>
+              <button class="mode-button" id="m3" type="button">Amble</button>
+            </div>
+          </div>
+          <div class="slider-stack">
+            <label class="slider-row" for="sl-period">
+              <span>Periodo</span>
+              <input type="range" min="1" max="4" step="0.1" value="2.0" id="sl-period">
+              <strong id="sv-period">2.0 s</strong>
+            </label>
+            <label class="slider-row" for="sl-step">
+              <span>Altura de paso</span>
+              <input type="range" min="10" max="60" step="1" value="30" id="sl-step">
+              <strong id="sv-step">30 mm</strong>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="card posture-panel">
+        <header class="card-header">
+          <div>
+            <div class="eyebrow">Geometría del cuerpo</div>
+            <h2>Postura</h2>
+          </div>
+          <label class="smoothing-control" for="sl-smo">
+            <span>Suavizado</span>
+            <input type="range" min="0.1" max="3" step="0.1" value="1.0" id="sl-smo">
+            <strong id="sv-smo">1.0 s</strong>
+          </label>
+        </header>
+        <p class="helper-text">Objetivo enviado frente a postura reportada por la ESP32.</p>
+        <div class="posture-grid">
+          {% for controls in [
+            [
+              ('roll', 'Roll', -20, 20, '°'),
+              ('pitch', 'Pitch', -20, 20, '°'),
+              ('yaw', 'Yaw', -30, 30, '°')
+            ],
+            [
+              ('x', 'Desplazamiento X', -40, 40, 'mm'),
+              ('y', 'Desplazamiento Y', -40, 40, 'mm'),
+              ('z', 'Altura Z', -50, 50, 'mm')
+            ]
+          ] %}
+          <div class="posture-column">
+            {% for axis, label, minimum, maximum, unit in controls %}
+            <label class="posture-control" for="sl-{{ axis }}">
+              <span>{{ label }}</span>
+              <input type="range" min="{{ minimum }}" max="{{ maximum }}" step="1" value="0" id="sl-{{ axis }}">
+              <span class="posture-values">
+                <small>Objetivo</small><strong id="sv-{{ axis }}">0{{ unit }}</strong>
+                <small>Real</small><strong class="real-value" id="rv-{{ axis }}">--</strong>
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+        <button class="button button-wide" id="posture-reset" type="button">Restablecer postura</button>
+      </section>
+
+      <section class="feedback-grid">
+        <article class="card odometry-panel">
+          <header class="card-header">
+            <div>
+              <div class="eyebrow">Modelo de movimiento</div>
+              <h2>Odometría teórica</h2>
+            </div>
+          </header>
+          <div class="odometry-grid">
+            <div><span>X</span><strong id="odo-x">0.00</strong><small>mm</small></div>
+            <div><span>Y</span><strong id="odo-y">0.00</strong><small>mm</small></div>
+            <div><span>Yaw</span><strong id="odo-yaw">0.000</strong><small>rad</small></div>
+          </div>
+          <button class="button button-wide" id="odom-reset" type="button">Reiniciar odometría</button>
+        </article>
+
+        <article class="card log-panel">
+          <header class="card-header">
+            <div>
+              <div class="eyebrow">Diagnóstico</div>
+              <h2>Registro de comandos</h2>
+            </div>
+          </header>
+          <div class="command-log" id="log"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="{{ url_for('static', filename='js/panel/main.js') }}"></script>
+</body>
+</html>

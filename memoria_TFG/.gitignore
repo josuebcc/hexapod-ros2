@@ -1,0 +1,59 @@
+# ─── Auxiliares de LaTeX ────────────────────────────────────────────────────
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
+
+# Bibliografía
+*.bbl
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+*.run.xml
+
+# Índices
+*.idx
+*.ilg
+*.ind
+*.ist
+
+# latexmk
+*.fdb_latexmk
+*.synctex
+*.synctex.gz
+*.synctex(busy)
+*.pdfsync
+
+# Beamer
+*.nav
+*.pre
+*.snm
+*.vrb
+
+# minted
+_minted*/
+*.pyg
+
+# Comprobaciones y compilaciones temporales
+zzchk.*
+
+# ─── Sistema operativo ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Configuración local de herramientas ─────────────────────────────────
+.codex/
+.vscode/
+
+# ─── El PDF sí se versiona (opcional, comenta si prefieres no incluirlo) ─────
+# main.pdf

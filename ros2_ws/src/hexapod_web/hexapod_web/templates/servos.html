@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexapodo | Servos</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/servos.css') }}">
+</head>
+<body>
+<div class="app-shell app-shell-wide">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Diagnóstico</div>
+      <h1>Mapa de servos</h1>
+    </div>
+    <div class="topbar-actions">
+      <a class="button button-compact" href="/">Volver al panel</a>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="card card-wide servo-diagram-card">
+      <div class="card-header">
+        <div>
+          <div class="eyebrow">Hexápodo</div>
+          <h2>Motor correspondiente en cada articulación</h2>
+          <div class="servo-register-hint">Pulsa un motor para consultar o modificar sus registros.</div>
+        </div>
+        <div class="servo-body-legend servo-body-legend-inline">
+          <span><i class="legend-dot legend-dot-ok"></i> estable</span>
+          <span><i class="legend-dot legend-dot-warn"></i> vigilando</span>
+          <span><i class="legend-dot legend-dot-hot"></i> caliente</span>
+          <span><i class="legend-dot legend-dot-stale"></i> sin dato</span>
+        </div>
+      </div>
+      <div class="servo-stage-scroll">
+        <div class="servo-hex-stage" id="servo-hexapod-stage"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<dialog class="servo-register-dialog" id="servo-register-dialog">
+  <section class="servo-register-panel">
+    <header class="servo-register-head">
+      <div>
+        <div class="eyebrow">Tabla de control AX-12A</div>
+        <h2 class="servo-register-title" id="servo-register-title">Servo</h2>
+        <div class="servo-register-subtitle" id="servo-register-subtitle"></div>
+      </div>
+      <button class="button button-compact" id="servo-register-close" type="button">Cerrar</button>
+    </header>
+    <div class="servo-register-status" id="servo-register-status">
+      Lee un registro o escribe un valor RAW en los registros habilitados.
+    </div>
+    <div class="servo-register-groups" id="servo-register-groups"></div>
+  </section>
+</dialog>
+
+<script type="module" src="{{ url_for('static', filename='js/servos/main.js') }}"></script>
+</body>
+</html>

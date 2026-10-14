@@ -1,0 +1,20 @@
+menu "AX-12 bus configuration"
+
+    config DXL_TX_PIN
+    int "UART TX Pin"
+    default 16
+    help
+        GPIO used to transmit data to the DYNAMIXEL bus.
+
+    config DXL_RX_PIN
+    int "UART RX Pin"
+    default 17
+    help
+        GPIO used to receive data from the DYNAMIXEL bus.
+
+    config DXL_DIR_PIN
+    int "UART direction Pin"
+    default 2
+    help
+        GPIO used to control the direction of the half-duplex transceiver.
+endmenu

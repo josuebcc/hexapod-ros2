@@ -1,0 +1,31 @@
+# Filtros aplicados a /scan antes del evitador; el resultado se publica en
+# /scan_filtered. El orden importa: si se quitaran primero las medidas sueltas,
+# sus NaN harían que la interpolación rellenara los huecos con NaN y un objeto
+# oscuro que solo devuelve ecos sueltos desaparecería del barrido.
+scan_to_scan_filter_chain:
+  ros__parameters:
+    # 1. Rellena cada tramo sin eco (inf) con la media de las medidas válidas
+    #    de sus extremos. Un cristal o un objeto oscuro entre dos zonas con eco
+    #    pasa a verse como un obstáculo en lugar de como espacio libre.
+    filter1:
+      name: relleno_sin_eco
+      type: laser_filters/InterpolationFilter
+
+    # 2. Elimina (NaN) las medidas sin vecinas parecidas: una medida se conserva
+    #    si forma parte de filter_window casillas seguidas que difieren menos de
+    #    max_range_difference de la primera.
+    filter2:
+      name: quitar_fantasmas
+      type: laser_filters/LaserScanSpeckleFilter
+      params:
+        # 0: compara la distancia entre casillas consecutivas.
+        filter_type: 0
+        # Solo se evalúa lo que está a menos de 1 m, que es lo único que influye
+        # en el evitador (ningún umbral pasa de 0.8 m). Lo más lejano se conserva.
+        max_range: 1.0
+        # Una pared a menos de 1 m vista de refilón varía unos 5 cm en tres
+        # casillas, por lo que no se elimina.
+        max_range_difference: 0.1
+        # El driver copia cada medida en hasta dos casillas consecutivas; con tres
+        # hacen falta al menos dos medidas reales.
+        filter_window: 3
