@@ -1,0 +1,249 @@
+/*
+ * hexapod.css — Capa de marca sobre doxygen-awesome-css.
+ * Se carga DESPUÉS de doxygen-awesome*.css, por lo que puede redefinir sus variables.
+ */
+
+/* ============================================================
+ * 1. Paleta
+ * ============================================================ */
+
+html {
+    /* Geometría de la barra lateral.
+     * --side-nav-fixed-width DEBE coincidir con TREEVIEW_WIDTH del Doxyfile.
+     * --top-height reserva el hueco de la cabecera (logo + nombre + lema): si se
+     * alarga PROJECT_BRIEF hay que subir este valor, o el árbol se solapa con ella.
+     * El tema exige además DISABLE_INDEX = NO y FULL_SIDEBAR = NO. */
+    --side-nav-fixed-width:    335px;
+    --top-height:              130px;
+
+    /* Acento principal: teal técnico */
+    --primary-color:           #0e7490;
+    --primary-dark-color:      #0a5566;
+    --primary-light-color:     #4ba3b8;
+    --primary-lighter-color:   #d3e9ef;
+    --primary-lightest-color:  #eef7fa;
+
+    /* Acento secundario propio (chips, barras, detalles) */
+    --hx-accent:               #d97706;
+    --hx-accent-soft:          #fef3e2;
+    --hx-surface:              #ffffff;
+    --hx-surface-alt:          #f7fafc;
+    --hx-border:               #dfe6ea;
+    --hx-muted:                #5b6b73;
+
+    --page-background-color:   #fbfdfe;
+    --separator-color:         #e2eaee;
+
+    --border-radius-large:     10px;
+    --border-radius-small:     6px;
+    --content-maxwidth:        1100px;
+    --spacing-medium:          14px;
+
+    --font-family-monospace:   ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code",
+                               Consolas, "Liberation Mono", monospace;
+}
+
+html.dark-mode {
+    --primary-color:           #38bdd8;
+    --primary-dark-color:      #7dd8e8;
+    --primary-light-color:     #24798d;
+    --primary-lighter-color:   #17323a;
+    --primary-lightest-color:  #12262c;
+
+    --hx-accent:               #fbbf24;
+    --hx-accent-soft:          #33270d;
+    --hx-surface:              #17242a;
+    --hx-surface-alt:          #142025;
+    --hx-border:               #2a3d45;
+    --hx-muted:                #9fb2ba;
+
+    --page-background-color:   #101a1f;
+    --side-nav-background:     #0c1418;
+    --separator-color:         #24373f;
+}
+
+/* ============================================================
+ * 2. Cabecera y barra lateral
+ * ============================================================ */
+
+/* Nota: no se toca el `padding` de #titlearea. El tema lo usa para cuadrar la
+ * cabecera con --top-height; sobrescribirlo descuadra la barra lateral. */
+#titlearea {
+    background: linear-gradient(135deg,
+                var(--primary-lightest-color) 0%,
+                var(--page-background-color) 70%);
+    border-bottom: 1px solid var(--separator-color);
+}
+
+#projectlogo img {
+    max-height: 44px;
+    width: auto;
+}
+
+#projectname {
+    font-weight: 700;
+    letter-spacing: -0.4px;
+}
+
+#projectbrief {
+    color: var(--hx-muted);
+}
+
+/* Marca discreta de sección en el árbol lateral */
+#side-nav {
+    border-right: 1px solid var(--separator-color);
+}
+
+/* ============================================================
+ * 3. Portada: hero + tarjetas de navegación
+ * ============================================================ */
+
+.hx-hero {
+    margin: 4px 0 26px 0;
+    padding: 26px 28px;
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--hx-border);
+    border-left: 4px solid var(--primary-color);
+    background: var(--hx-surface-alt);
+}
+
+.hx-hero p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--hx-muted);
+}
+
+.hx-hero strong {
+    color: var(--primary-color);
+}
+
+/* Chips de datos clave */
+.hx-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0 4px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.hx-badge {
+    display: inline-block;
+    padding: 4px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-family-monospace);
+    color: var(--primary-dark-color);
+    background: var(--primary-lighter-color);
+    border: 1px solid var(--primary-light-color);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.hx-badge--accent {
+    color: var(--hx-accent);
+    background: var(--hx-accent-soft);
+    border-color: var(--hx-accent);
+}
+
+/* Rejilla de tarjetas */
+.hx-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 20px 0 28px 0;
+}
+
+.hx-card {
+    display: block;
+    padding: 18px 20px;
+    border: 1px solid var(--hx-border);
+    border-radius: var(--border-radius-large);
+    background: var(--hx-surface);
+    text-decoration: none !important;
+    transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+
+.hx-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+    box-shadow: 0 6px 18px rgba(14, 116, 144, .14);
+}
+
+html.dark-mode .hx-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+}
+
+.hx-card-title {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.hx-card-text {
+    display: block;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--hx-muted);
+}
+
+/* ============================================================
+ * 4. Contenido
+ * ============================================================ */
+
+/* Tablas de referencia (comandos, parámetros) */
+table.markdownTable {
+    border-radius: var(--border-radius-small);
+    overflow: hidden;
+}
+
+table.markdownTable th {
+    background: var(--primary-color);
+    color: #fff;
+    font-weight: 600;
+}
+
+table.markdownTable td code {
+    white-space: nowrap;
+}
+
+/* Bloques de código: filete de acento */
+div.fragment {
+    border-left: 3px solid var(--primary-light-color);
+}
+
+/* Notas / avisos con más presencia */
+dl.section.note,
+dl.section.warning,
+dl.section.attention {
+    border-radius: var(--border-radius-small);
+}
+
+/* Diagramas dot centrados y con respiro */
+div.dotgraph,
+div.center {
+    margin: 20px 0;
+}
+
+/* Los SVG generados por dot no se recortan en pantallas estrechas */
+div.dotgraph .dotgraph,
+div.dotgraph svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ============================================================
+ * 5. Impresión
+ * ============================================================ */
+
+@media print {
+    #side-nav,
+    #nav-path,
+    #MSearchBox,
+    doxygen-awesome-dark-mode-toggle {
+        display: none !important;
+    }
+}

@@ -1,0 +1,499 @@
+\setcounter{table}{0}
+\renewcommand{\thetable}{D.\arabic{table}}
+\renewcommand{\theHtable}{D.\arabic{table}}
+
+Este anexo describe el procedimiento necesario para compilar, cargar y poner en
+funcionamiento el firmware de bajo nivel sobre el hexápodo, así como para instalar,
+compilar y lanzar el subsistema ROS~2 que se ejecuta en la Raspberry~Pi. El objetivo
+no es repetir la arquitectura desarrollada en el Capítulo~4, sino proporcionar una
+secuencia reproducible de preparación, arranque, comprobación y parada para ambos
+subsistemas.
+
+\section*{D.1. Requisitos previos y seguridad}
+
+Para cargar el firmware se necesita un equipo con ESP-IDF~5.5.1, un cable USB
+de programación y acceso al directorio del proyecto \texttt{firmware\_esp32}. En el
+robot, los 18 AX-12A deben estar configurados a 1~Mbit/s y con los
+identificadores indicados en la Tabla~\ref{tab:manual_ids_servos}. La PCB debe
+proporcionar la adaptación \textit{half-duplex} y la alimentación descritas en
+las Subsecciones~\ref{subsec:hw_half_duplex} y~\ref{subsec:driver_ax12}.
+
+\noindent\fcolorbox{black}{gray!10}{%
+    \parbox{0.94\textwidth}{%
+        \textbf{Precaución.} Durante la primera puesta en marcha el hexápodo
+        debe permanecer elevado, con todas las patas libres y sin personas u
+        objetos dentro de su recorrido. Al arrancar, el firmware activa el par
+        de los actuadores y envía la postura neutral, aunque el modo de marcha
+        inicial sea \texttt{STOP}. Todas las conexiones deben realizarse con la
+        alimentación de los actuadores desconectada.
+    }%
+}
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{@{}Xccc@{}}
+        \toprule
+        \textbf{Pata} & \textbf{Coxa} & \textbf{Fémur} & \textbf{Tibia} \\
+        \midrule
+        Izquierda delantera & 1  & 3  & 5  \\
+        Izquierda media     & 13 & 15 & 17 \\
+        Izquierda trasera   & 7  & 9  & 11 \\
+        Derecha trasera     & 8  & 10 & 12 \\
+        Derecha media       & 14 & 16 & 18 \\
+        Derecha delantera   & 2  & 4  & 6  \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Identificadores de los AX-12A utilizados por el firmware.}
+    \label{tab:manual_ids_servos}
+\end{table}
+
+\section*{D.2. Conexiones utilizadas por el firmware}
+
+El ESP32 emplea tres UART diferentes. La UART0 queda reservada para la carga y
+los mensajes de depuración; la UART1 recibe los comandos de control; y la UART2
+se conecta al circuito de adaptación del bus DYNAMIXEL. La configuración
+utilizada se resume en la Tabla~\ref{tab:manual_uart}.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{@{}lllX@{}}
+        \toprule
+        \textbf{Interfaz} & \textbf{Señales} & \textbf{Velocidad} & \textbf{Uso} \\
+        \midrule
+        UART0 & USB/programación & 115200~bit/s & Carga del firmware y registro de arranque. \\
+        UART1 & TX: GPIO4; RX: GPIO5 & 115200~bit/s & Comandos y telemetría. \\
+        UART2 & TX: GPIO16; RX: GPIO17; DIR: GPIO2 & 1~Mbit/s & Bus \textit{half-duplex} de los AX-12A. \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Interfaces serie empleadas en el ESP32.}
+    \label{tab:manual_uart}
+\end{table}
+
+Para una prueba directa de la UART1 puede utilizarse un adaptador USB--UART de
+3,3~V. Su RX debe conectarse al GPIO4 del ESP32, su TX al GPIO5 y ambas placas
+deben compartir GND. No debe aplicarse una señal serie de 5~V al ESP32. Cada
+comando se transmite como una línea de texto terminada en salto de línea. La
+consola USB de programación no sustituye esta conexión, ya que corresponde a la
+UART0.
+
+\section*{D.3. Compilación y carga}
+
+Con el entorno de ESP-IDF inicializado, el firmware se compila y carga mediante:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single,breaklines=true]
+cd /ruta/al/proyecto/firmware_esp32
+idf.py build
+idf.py -p /dev/ttyUSB0 flash monitor
+\end{lstlisting}
+
+El nombre del puerto puede ser distinto, por ejemplo \texttt{/dev/ttyACM0}. La
+orden \texttt{monitor} muestra la salida de depuración de la UART0 y se abandona
+con \texttt{Ctrl+]}.
+
+La carga puede realizarse sin alimentar los actuadores. Sin embargo, antes de
+la puesta en marcha real debe estar disponible el bus completo y debe
+reiniciarse el ESP32, puesto que el escaneo y la activación de par se ejecutan
+una sola vez durante el arranque.
+
+\section*{D.4. Primera puesta en marcha}
+
+Con el robot elevado y las conexiones revisadas, el procedimiento recomendado
+es el siguiente:
+
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+    \item Mantener inicialmente desconectada la alimentación de potencia y
+          comprobar la polaridad, la masa común y los seis ramales del bus.
+    \item Conectar la interfaz de depuración y, si se desea operar sin ROS~2,
+          un terminal serie independiente a la UART1 a 115200~bit/s, 8N1.
+    \item Alimentar el sistema o reiniciar el ESP32 con los AX-12A ya
+          disponibles en el bus.
+    \item Verificar en la consola que el escaneo detecta los servos con IDs
+          1--18 y finaliza con el mensaje \texttt{18/18 respuestas}.
+    \item Confirmar que las patas adoptan la postura neutral sin colisiones,
+          vibraciones ni movimientos en sentido contrario al esperado.
+\end{enumerate}
+
+El estado inicial del firmware es \texttt{STOP}, con periodo de marcha de 2~s, altura de
+paso de 40~mm, postura local nula y tiempo de suavizado de 1~s. Cuando se
+utiliza ROS~2, el puente modifica esta configuración al conectarse
+(Sección~D.12). El modo
+\texttt{STOP} evita el avance, pero mantiene el par de los actuadores.
+
+\section*{D.5. Prueba funcional mediante UART1}
+
+Antes de apoyar el robot en el suelo debe realizarse una prueba a baja
+velocidad. La siguiente secuencia restablece una configuración conocida, activa
+el patrón trípode y solicita un avance longitudinal reducido:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single]
+HELP
+MOD,0
+CMD,0,0,0
+POS,0,0,0,0,0,0
+SMO,2
+GAT,2,20
+MOD,1
+CMD,20,0,0
+\end{lstlisting}
+
+Tras comprobar varios ciclos, la parada se realiza enviando primero
+\texttt{CMD,0,0,0}. Cuando haya cesado el movimiento, se envía \texttt{MOD,0}.
+Las consignas permanecen almacenadas hasta recibir una nueva orden o reiniciar
+el sistema; por ello no debe desconectarse el enlace de control mientras exista
+una velocidad distinta de cero.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \begin{tabularx}{\textwidth}{@{}>{\ttfamily}lX@{}}
+        \toprule
+        \normalfont\textbf{Comando} & \textbf{Función} \\
+        \midrule
+        HELP o ? & Muestra la ayuda integrada. \\
+        MOD,m & Selecciona \texttt{0=STOP}, \texttt{1=TRIPOD}, \texttt{2=RIPPLE} o \texttt{3=AMBLE}. \\
+        CMD,vx,vy,vyaw & Fija las velocidades $v_x$ y $v_y$ en mm/s y $v_{yaw}$ en rad/s. \\
+        POS,r,p,y,x,ty,z & Fija la postura: rotaciones en radianes y desplazamientos en milímetros. \\
+        GAT,T,H & Fija el periodo $T$ en segundos y la altura $H$ del paso en milímetros. \\
+        SMO,t & Fija el tiempo de suavizado de la postura en segundos. \\
+        RST & Reinicia el origen de la odometría. \\
+        REG,id,a,n & Lee uno o dos bytes de la tabla de control de un AX-12A. \\
+        WREG,id,a,n,v & Escribe uno o dos bytes en la tabla de control de un AX-12A. \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Comandos aceptados por la UART1.}
+    \label{tab:manual_comandos_uart}
+\end{table}
+
+El controlador limita individualmente \textit{roll} y \textit{pitch} a
+$\pm0{,}35$~rad, el \textit{yaw} local a $\pm0{,}52$~rad, los desplazamientos
+$x$ e $y$ a $\pm40$~mm y $z$ a $\pm50$~mm. El periodo de marcha no puede ser
+inferior a 0,6~s y la altura de paso se mantiene entre 10 y 60~mm. Además, el
+generador normaliza conjuntamente el desplazamiento efectivo de cada paso, es
+decir, el que recorre el cuerpo durante una fase de apoyo, con límites de
+120~mm en X, 50~mm en Y y 0,35~rad de giro. Estos límites no evitan
+que una combinación extrema de postura y marcha pueda producir una cinemática
+inversa inválida, por lo que la validación inicial debe hacerse con consignas
+reducidas.
+
+\noindent\textbf{Advertencia sobre \texttt{WREG}.} Este comando permite
+modificar cualquier registro admitido por el firmware, incluidos parámetros de
+EEPROM como el identificador o la velocidad del bus. Debe reservarse para
+diagnóstico y utilizarse solo conociendo la tabla de control del AX-12A.
+
+\section*{D.6. Telemetría y comprobación}
+
+La UART1 transmite automáticamente una línea \texttt{ODO} cada segundo y
+publica los resultados del diagnóstico de los actuadores. Las respuestas se
+interpretan de acuerdo con la Tabla~\ref{tab:manual_respuestas_uart}.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \begin{tabularx}{\textwidth}{@{}>{\ttfamily}lX@{}}
+        \toprule
+        \normalfont\textbf{Respuesta} & \textbf{Contenido} \\
+        \midrule
+        ODO,x,y,yaw,roll,pitch,body\_yaw,x\_body,y\_body,z\_body & Odometría plana y postura local confirmada. \\
+        AXH,id,valid,V,T,load,error & Validez, tensión, temperatura, carga y byte de error de un actuador. La tensión se expresa en décimas de voltio. \\
+        AXR,id,a,n,valid,value,error & Resultado de una lectura solicitada con \texttt{REG}. \\
+        AXW,id,a,n,valid,value,error & Resultado de una escritura solicitada con \texttt{WREG}. \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Mensajes transmitidos por el firmware.}
+    \label{tab:manual_respuestas_uart}
+\end{table}
+
+Una muestra \texttt{AXH} no válida o con un byte de error distinto de cero
+debe investigarse antes de apoyar el robot. La odometría publicada es una
+estimación obtenida a partir de la consigna de marcha y no sustituye una medida
+externa del desplazamiento real.
+
+\section*{D.7. Parada y resolución de problemas}
+
+La parada ordinaria consiste en enviar \texttt{CMD,0,0,0}, esperar a que las
+patas terminen la transición y seleccionar \texttt{MOD,0}. Esta orden no
+desactiva el par; para manipular las articulaciones manualmente debe
+desconectarse la alimentación de los actuadores. Si se pierde la comunicación
+con una consigna de velocidad activa, debe cortarse dicha alimentación.
+
+Los fallos más habituales pueden localizarse con las siguientes comprobaciones:
+
+\begin{itemize}[leftmargin=*,nosep]
+    \small
+    \item \textbf{No se detecta ningún servo:} comprobar la alimentación del
+          bus, la masa común, la adaptación \textit{half-duplex}, la velocidad
+          de 1~Mbit/s y las señales GPIO16, GPIO17 y GPIO2.
+    \item \textbf{El escaneo es incompleto:} revisar el ID, el cableado y la
+          alimentación del ramal correspondiente. No debe haber IDs repetidos.
+    \item \textbf{No se reciben comandos:} comprobar que se utiliza la UART1,
+          que TX y RX están cruzados, que el formato es 115200~bit/s 8N1 y que
+          cada orden termina en salto de línea.
+    \item \textbf{Se registra una IK inválida:} enviar una velocidad nula,
+          recuperar la postura neutral y reducir la altura, la velocidad o el
+          desplazamiento solicitado antes de reanudar la marcha.
+    \item \textbf{Una articulación gira en sentido incorrecto:} detener el
+          sistema y revisar la correspondencia de IDs, los signos y los ajustes
+          de montaje definidos en \texttt{leg\_config.cpp}.
+\end{itemize}
+
+\section*{D.8. Requisitos e instalación de ROS~2 en la Raspberry~Pi}
+
+El subsistema de alto nivel, descrito en la Sección~\ref{sec:integracion_ros2}, se
+ejecuta sobre una Raspberry~Pi~4 \cite{raspberrypi4_datasheet} con Ubuntu Server
+24.04~LTS de 64~bits, la distribución de base admitida por ROS~2 Jazzy. Sobre esa
+base se instalan el paquete \texttt{ros-jazzy-ros-base}, la herramienta de
+compilación \texttt{colcon} (\texttt{python3-colcon-common-extensions}) y el
+gestor de dependencias \texttt{rosdep} (\texttt{python3-rosdep}), siguiendo el
+procedimiento oficial de instalación de ROS~2 \cite{ros2_docs}. Instalado el
+entorno, cada sesión debe cargarlo:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single]
+source /opt/ros/jazzy/setup.bash
+\end{lstlisting}
+
+por lo que conviene añadir esta línea a \texttt{\textasciitilde/.bashrc}. La
+Tabla~\ref{tab:manual_deps_ros2} resume las dependencias declaradas por cada
+paquete del proyecto, que \texttt{rosdep} resuelve automáticamente en la
+Sección~D.11.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{@{}l l X@{}}
+        \toprule
+        \textbf{Paquete} & \textbf{Compilación} & \textbf{Dependencias} \\
+        \midrule
+        \texttt{hexapod\_bridge} & \texttt{ament\_python} & \texttt{rclpy}, \texttt{geometry\_msgs}, \texttt{nav\_msgs}, \texttt{std\_msgs}, \texttt{tf\_transformations}, \texttt{python3-serial} \\
+        \texttt{hexapod\_web} & \texttt{ament\_python} & \texttt{rclpy}, \texttt{geometry\_msgs}, \texttt{nav\_msgs}, \texttt{std\_msgs}, \texttt{tf\_transformations}, \texttt{python3-flask} \\
+        \texttt{obstacle\_avoider} & \texttt{ament\_python} & \texttt{rclpy}, \texttt{sensor\_msgs}, \texttt{geometry\_msgs}, \texttt{python3-numpy} \\
+        \texttt{sllidar\_ros2} & \texttt{ament\_cmake} & \texttt{rclcpp}, \texttt{std\_srvs}, \texttt{sensor\_msgs} \\
+        \texttt{hexapod\_bringup} & \texttt{ament\_cmake} & \texttt{launch}, \texttt{launch\_ros}, \texttt{ament\_index\_python}, \texttt{laser\_filters} y los cuatro paquetes anteriores \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Dependencias declaradas por los paquetes ROS~2 del hexápodo.}
+    \label{tab:manual_deps_ros2}
+\end{table}
+
+\section*{D.9. Enlace serie con el ESP32}
+
+A diferencia de la prueba directa descrita en la Sección~D.2, en funcionamiento
+normal el puente \texttt{/esp32\_bridge} se comunica con el ESP32 a través del
+UART por hardware de la propia Raspberry~Pi (\texttt{/dev/ttyAMA0}), sin
+adaptador USB--UART intermedio: el GPIO14 (TX) se conecta al GPIO5 (RX) del
+ESP32, el GPIO15 (RX) al GPIO4 (TX) del ESP32, y ambas placas comparten masa.
+Al ser ambos extremos de 3,3~V, no se necesita la adaptación de niveles que sí
+exige el bus de los AX-12A.
+
+En la Raspberry~Pi~4, la interfaz PL011 que corresponde a \texttt{/dev/ttyAMA0}
+está asignada por defecto al controlador Bluetooth, por lo que debe liberarse y
+habilitarse manualmente. En \texttt{/boot/firmware/config.txt} se añade:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single]
+enable_uart=1
+dtoverlay=disable-bt
+\end{lstlisting}
+
+y se deshabilitan los servicios que, de lo contrario, reutilizarían el puerto
+como consola serie:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single,breaklines=true]
+sudo systemctl disable --now hciuart.service
+sudo systemctl disable --now serial-getty@ttyAMA0.service
+sudo usermod -aG dialout $USER
+\end{lstlisting}
+
+Tras reiniciar, \texttt{/dev/ttyAMA0} debe existir y ser accesible sin
+privilegios de superusuario; este es el puerto y la velocidad (115200~bit/s)
+configurados por defecto en \texttt{hexapod\_bridge/config/esp32\_bridge.yaml}.
+
+\noindent\fcolorbox{black}{gray!10}{%
+    \parbox{0.94\textwidth}{%
+        \textbf{Precaución.} Un error en \texttt{config.txt} puede impedir el
+        arranque gráfico o dejar la Raspberry~Pi sin consola serie de
+        emergencia. Conviene conservar una copia del archivo original y
+        disponer de acceso por SSH antes de reiniciar.
+    }%
+}
+
+\section*{D.10. Preparación del LiDAR}
+
+El RPLIDAR~A1M8 se conecta por USB y se presenta como un adaptador serie
+CP210x. Para evitar que el nombre del dispositivo cambie según el orden de
+conexión, \texttt{sllidar\_ros2} \cite{sllidar_ros2} incluye la siguiente
+regla \texttt{udev}, que debe copiarse a \texttt{/etc/udev/rules.d/} y
+recargarse:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single,breaklines=true]
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="0777", SYMLINK+="rplidar"
+\end{lstlisting}
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single,breaklines=true]
+sudo cp src/sllidar_ros2/scripts/rplidar.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+\end{lstlisting}
+
+A partir de ese momento el sensor queda disponible de forma estable en
+\texttt{/dev/rplidar}, con independencia del puerto \texttt{ttyUSB} que le
+asigne el sistema, y es ese enlace el que conviene indicar al lanzamiento
+descrito en la Sección~D.12.
+
+\section*{D.11. Obtención y compilación del espacio de trabajo}
+
+Con ROS~2 instalado y \texttt{colcon} disponible, el código del proyecto
+\cite{repositorio_hexapodo} se sitúa dentro de \texttt{src} de un espacio de
+trabajo y se compila:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single,breaklines=true]
+mkdir -p ~/ros2_ws/src
+git clone https://github.com/josuebcc/hexapod-ros2 ~/ros2_ws/src
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install
+source install/setup.bash
+\end{lstlisting}
+
+El espacio de trabajo contiene cinco paquetes: los tres desarrollados para
+este proyecto (\texttt{hexapod\_bridge}, \texttt{hexapod\_web} y
+\texttt{obstacle\_avoider}), el controlador del fabricante \texttt{sllidar\_ros2}
+\cite{sllidar_ros2} y el paquete de lanzamiento \texttt{hexapod\_bringup}, que
+no contiene código propio más allá del archivo de lanzamiento descrito a
+continuación. Como con el firmware, \texttt{source install/setup.bash} debe
+añadirse a \texttt{\textasciitilde/.bashrc} para no repetirlo en cada sesión.
+
+\section*{D.12. Lanzamiento del sistema}
+
+El lanzamiento conjunto se realiza con un único comando:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single]
+ros2 launch hexapod_bringup hexapod.launch.py
+\end{lstlisting}
+
+que arranca \texttt{/esp32\_bridge}, \texttt{/web\_panel}, \texttt{/reactive\_node}
+(el nodo de \texttt{obstacle\_avoider}), el filtro
+\texttt{/scan\_to\_scan\_filter\_chain} de \texttt{laser\_filters} y el controlador
+\texttt{sllidar\_ros2}, en las condiciones resumidas en la
+Tabla~\ref{tab:manual_launch_args}. El puente no
+incorpora valores por defecto: si se ejecuta de forma aislada con
+\texttt{ros2 run}, debe recibir siempre el archivo \texttt{esp32\_bridge.yaml}.
+
+Unos dos segundos después de arrancar, \texttt{/esp32\_bridge} envía una única
+vez la configuración inicial definida en \texttt{esp32\_bridge.yaml}. Con los
+valores por defecto, esta selecciona la marcha trípode (\texttt{MOD,1}), un
+periodo de 2~s con altura de paso de 30~mm (\texttt{GAT,2,30}) y un suavizado
+de 0,5~s (\texttt{SMO,0.5}). Por tanto, a diferencia del arranque descrito en la
+Sección~D.4, el robot no permanece en \texttt{STOP}, aunque no avanza mientras
+no reciba una velocidad en \path{/hexapod/cmd_vel}.
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \begin{tabularx}{\textwidth}{@{}l l X@{}}
+        \toprule
+        \textbf{Argumento} & \textbf{Valor por defecto} & \textbf{Función} \\
+        \midrule
+        \texttt{lidar\_port} & \texttt{/dev/ttyUSB0} & Puerto serie del LiDAR (usar \texttt{/dev/rplidar} tras la Sección~D.10). \\
+        \texttt{lidar\_baud} & \texttt{115200} & Velocidad de transmisión del LiDAR. \\
+        \texttt{start\_web} & \texttt{true} & Arranca o no el panel web. \\
+        \texttt{start\_lidar} & \texttt{true} & Arranca o no el controlador del LiDAR. \\
+        \texttt{bridge\_params\_file} & \texttt{esp32\_bridge.yaml} & Parámetros del puente ESP32. \\
+        \texttt{web\_params\_file} & \texttt{web\_panel.yaml} & Parámetros del panel web. \\
+        \texttt{scan\_filters\_file} & \texttt{scan\_filters.yaml} & Filtros aplicados al barrido del LiDAR. \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Argumentos de \texttt{hexapod.launch.py}.}
+    \label{tab:manual_launch_args}
+\end{table}
+
+Por ejemplo, para lanzar el sistema con el LiDAR fijado por la regla
+\texttt{udev} y sin el panel web:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single,breaklines=true]
+ros2 launch hexapod_bringup hexapod.launch.py lidar_port:=/dev/rplidar start_web:=false
+\end{lstlisting}
+
+El evitador también puede ejecutarse de forma aislada, con
+\texttt{/scan\_filtered} como entrada y \texttt{/obstacle\_avoider/cmd\_vel} como
+salida, siempre que el filtro del LiDAR esté en ejecución:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single]
+ros2 run obstacle_avoider reactive_node
+\end{lstlisting}
+
+\section*{D.13. Uso del panel web}
+
+Con \texttt{/web\_panel} en ejecución, la interfaz queda disponible en el
+puerto~8080 de la Raspberry~Pi, por ejemplo en
+\url{http://192.168.1.145:8080/} dentro de la red del robot. El panel es el
+único nodo que publica en \path{/hexapod/cmd_vel} y arranca siempre en modo
+manual: en ese modo reenvía sus propios controles, mientras que en modo
+autónomo reenvía las propuestas recibidas en \path{/obstacle_avoider/cmd_vel}. La
+activación del modo autónomo, mediante las rutas \texttt{GET}/\texttt{POST}
+\texttt{/control\_mode}, exige una propuesta del evitador recibida hace menos
+de 0,5~s; en caso contrario se rechaza. Durante la autonomía el servidor
+descarta además cualquier velocidad manual con el código HTTP~409, y una
+parada (\texttt{MOD,0}) o el cierre del nodo devuelven el sistema a modo
+manual. La Tabla~\ref{tab:manual_limites_postura} recoge los límites que el
+panel aplica a la postura del cuerpo, configurables en
+\texttt{web\_panel.yaml}.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{@{}l c c c@{}}
+        \toprule
+        \textbf{Parámetro} & \textbf{Mínimo} & \textbf{Máximo} & \textbf{Paso} \\
+        \midrule
+        Roll & $-20^\circ$ & $20^\circ$ & $1^\circ$ \\
+        Pitch & $-20^\circ$ & $20^\circ$ & $1^\circ$ \\
+        Yaw local & $-25^\circ$ & $25^\circ$ & $1^\circ$ \\
+        $x$ & $-40$~mm & $40$~mm & $1$~mm \\
+        $y$ & $-40$~mm & $40$~mm & $1$~mm \\
+        $z$ & $-50$~mm & $50$~mm & $1$~mm \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Límites de postura configurados en \texttt{web\_panel.yaml}.}
+    \label{tab:manual_limites_postura}
+\end{table}
+
+La vista de servos de la misma interfaz permite leer y escribir registros
+individuales de los AX-12A mediante los comandos \texttt{REG}/\texttt{WREG}
+descritos en la Sección~D.5; la escritura no vuelve a leer el registro de
+forma automática, por lo que la comprobación debe hacerse manualmente con el
+botón \textit{Leer}.
+
+\section*{D.14. Resolución de problemas (Raspberry~Pi y ROS~2)}
+
+\begin{itemize}[leftmargin=*,nosep]
+    \small
+    \item \textbf{\texttt{ros2 launch} no encuentra los paquetes:} falta
+          cargar \texttt{/opt/ros/jazzy/setup.bash} o
+          \texttt{install/setup.bash}, o \texttt{colcon build} terminó con
+          errores que no se revisaron.
+    \item \textbf{Permiso denegado en \texttt{/dev/ttyAMA0},
+          \texttt{/dev/ttyUSB0} o \texttt{/dev/rplidar}:} el usuario no
+          pertenece al grupo \texttt{dialout}; tras añadirlo es necesario
+          cerrar sesión y volver a entrar.
+    \item \textbf{El puente no recibe telemetría del ESP32:} el UART de la
+          Raspberry~Pi no está habilitado, el servicio
+          \texttt{serial-getty@ttyAMA0} sigue activo, o el puerto y la
+          velocidad de \texttt{esp32\_bridge.yaml} no coinciden con los de la
+          Sección~D.2.
+    \item \textbf{El LiDAR no aparece o cambia de nombre:} falta instalar la
+          regla \texttt{udev} de la Sección~D.10; debe usarse
+          \texttt{/dev/rplidar} en lugar de \texttt{/dev/ttyUSBn}.
+    \item \textbf{El panel web no responde:} comprobar que ningún otro
+          proceso ocupa el puerto~8080 y que la Raspberry~Pi es accesible en
+          la red utilizada.
+    \item \textbf{No es posible activar el modo autónomo:}
+          \texttt{reactive\_node} no está en ejecución o no recibe
+          \texttt{/scan\_filtered} (\texttt{start\_lidar} desactivado, LiDAR
+          desconectado o filtro detenido), o su última propuesta supera los
+          0,5~s exigidos.
+    \item \textbf{El robot no se detiene al perder la conexión:} verificar
+          que \texttt{/esp32\_bridge} sigue en ejecución y que
+          \texttt{cmd\_vel\_timeout\_s} en \texttt{esp32\_bridge.yaml}
+          conserva un valor bajo (1~s por defecto).
+\end{itemize}

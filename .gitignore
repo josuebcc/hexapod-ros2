@@ -1,0 +1,62 @@
+# ROS 2 / colcon
+/ros2_ws/build/
+/ros2_ws/install/
+/ros2_ws/log/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ESP-IDF / CMake
+/firmware_esp32/build/
+/firmware_esp32/managed_components/
+/firmware_esp32/sdkconfig.old
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles/
+.cmake/
+
+# Documentación generada
+/documentacion_doxygen/docs/
+
+# LaTeX (los PDF finales se conservan)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+_minted*/
+
+# Altium Designer
+/hardware/pcb/**/History/
+/hardware/pcb/**/Project Outputs for */
+/hardware/pcb/**/__Previews/
+/hardware/pcb/**/*.PrjPcbStructure
+
+# Estado local de editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Recursos locales grandes no versionados
+/Bibliografia interesante/

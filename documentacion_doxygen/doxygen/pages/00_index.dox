@@ -1,0 +1,61 @@
+/**
+@mainpage Referencia del firmware del hexápodo
+
+@htmlonly
+<div class="hx-hero">
+<p>
+Referencia generada automáticamente a partir del código del firmware ESP-IDF
+del hexápodo. La documentación se organiza por <strong>módulos funcionales</strong>:
+cada módulo reúne su interfaz pública, sus tipos y los ficheros que lo implementan.
+</p>
+<ul class="hx-badges">
+  <li class="hx-badge">ESP32 · ESP-IDF</li>
+  <li class="hx-badge">FreeRTOS</li>
+  <li class="hx-badge">18 × AX-12A</li>
+  <li class="hx-badge hx-badge--accent">DYNAMIXEL 1.0</li>
+</ul>
+</div>
+@endhtmlonly
+
+@section main_nav Consulta de la documentación
+
+@htmlonly
+<div class="hx-cards">
+
+  <a class="hx-card" href="topics.html">
+    <span class="hx-card-title">Módulos</span>
+    <span class="hx-card-text">Punto de entrada principal. Agrupa la API por
+    responsabilidad funcional, con sus tipos y ficheros asociados.</span>
+  </a>
+
+  <a class="hx-card" href="annotated.html">
+    <span class="hx-card-title">Estructuras</span>
+    <span class="hx-card-text">Índice de las estructuras de configuración,
+    estado y resultados utilizadas por los módulos.</span>
+  </a>
+
+  <a class="hx-card" href="files.html">
+    <span class="hx-card-title">Archivos</span>
+    <span class="hx-card-text">Vista complementaria por fichero, incluido el
+    punto de entrada app_main.c y el código fuente navegable.</span>
+  </a>
+
+</div>
+@endhtmlonly
+
+@section main_scope Alcance
+
+Esta web contiene la referencia técnica que puede obtenerse directamente del
+código: funciones, parámetros, valores devueltos, estructuras, constantes y
+dependencias entre ficheros. La explicación de las decisiones de diseño se
+mantiene en la memoria del proyecto, mientras que el protocolo serie, los
+parámetros de configuración y las instrucciones de compilación se recogen en
+el anexo técnico.
+
+El fichero app_main.c no se presenta como un módulo: constituye el punto de
+entrada de ESP-IDF, construye la configuración inicial y arranca las tareas del
+sistema. Puede consultarse desde la vista Archivos.
+
+@note Para documentar una función nueva debe actualizarse su comentario en la
+cabecera correspondiente. No es necesario editar esta portada.
+*/
