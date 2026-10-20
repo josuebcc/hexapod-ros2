@@ -2021,45 +2021,31 @@ Figura~\ref{fig:ros2_rqt_graph}, y sus vistas se recogen a mayor tamaño en el
 \label{subsec:lidar_ros2}
 
 
+Dotar a la plataforma de percepción del entorno es el primer paso hacia un sistema de
+navegación. Se ha optado por un LiDAR porque permite obtener resultados inmediatos,
+como una navegación reactiva basada en la detección de obstáculos.
 
-Dotar a la plataforma de percepción del entorno es el paso previo a cualquier interacción. Este trabajo no aborda un sistema de navegación completo, pero demuestra
-la integración de un sensor con un algoritmo como base
-para una futura planificación.
-
-\begin{wrapfigure}[14]{r}{0.45\textwidth}
+\begin{wrapfigure}[13]{r}{0.45\textwidth}
   \vspace{-0.3\baselineskip}
   \centering
-  \includegraphics[width=1\linewidth]{capitulos/cap3/figuras/rplidar_a1m8.jpg}
+  \includegraphics[width=0.9\linewidth]{capitulos/cap3/figuras/rplidar_a1m8.png}
   \captionsetup{justification=centering}
-  \caption{LiDAR RPLIDAR~A1M8 y su sistema de referencia angular.}
+  \caption{LiDAR RPLIDAR~A1M8 y su sistema de referencia.}
   \footnotesize Fuente: SLAMTEC~\cite{rplidar_a1m8_datasheet} y
   \texttt{sllidar\_ros2}~\cite{sllidar_ros2}.
   \label{fig:rplidar_a1m8}
 \end{wrapfigure}
 
-El sensor empleado es el LiDAR RPLIDAR~A1M8 \cite{rplidar_a1m8_datasheet}, introducido
-en la Sección~\ref{sec:arquitectura_general} y conectado por USB a la Raspberry~Pi~4.
-Este LiDAR proyecta un haz láser y, mediante un sensor de imagen
-desplazado respecto al emisor, registra la posición del punto reflejado, de cuya
-geometría se deduce la distancia. La integración en ROS~2 corre a cargo de \texttt{sllidar\_ros2}
-\cite{sllidar_ros2}, el controlador que mantiene el propio fabricante. Su nodo
-\texttt{/sllidar\_node} admite como parámetros el puerto serie, la velocidad de
-transmisión, el identificador del sistema de referencia y el modo de barrido.
-
-El nodo publica una única salida, el tópico \path{/scan}, con mensajes
-\path{sensor_msgs/msg/LaserScan}, el tipo estándar de ROS~2 \cite{ros2_docs}. El
-ángulo cero de la medida no lo decide el software, sino una referencia física
-solidaria a la carcasa del sensor (Figura~\ref{fig:rplidar_a1m8}), que debe quedar
-alineada con el frente del robot al montarlo. El controlador se limita a reordenar las
-medidas para seguir el convenio de ROS~2, con el ángulo creciente en sentido
-antihorario entre $-\pi$ y $\pi$~rad. De ahí que la medida $i$-ésima corresponda a
-$\theta_i=\theta_{\min}+i\,\Delta\theta$ (el índice cero del vector \path{ranges}
-apunta hacia atrás y el sector frontal cae en la mitad central del vector).
-
-El sensor se ha atornillado de modo que su eje~Y (el de ángulo cero) quede alineado
-con el eje~X del sistema del cuerpo $\{B\}$ definido en la
-Subsección~\ref{subsec:frames_notacion} (Figura~\ref{fig:coordenadascoxas}), es
-decir, con el frente del robot. La Figura~\ref{fig:rviz2_scan} muestra un barrido obtenido con esta configuración.
+El sensor es el RPLIDAR~A1M8 \cite{rplidar_a1m8_datasheet}, presentado en la
+Sección~\ref{sec:arquitectura_general}, que mide distancias por triangulación láser.
+Su integración en ROS~2 corre a cargo de \texttt{sllidar\_ros2}~\cite{sllidar_ros2},
+el controlador que mantiene el propio fabricante, cuyo nodo publica el tópico
+\path{/scan} con mensajes estándar \path{sensor_msgs/msg/LaserScan}~\cite{ros2_docs}.
+El ángulo cero de \path{/scan} corresponde al eje~X de la
+Figura~\ref{fig:rplidar_a1m8}, que apunta hacia el motor y es solidario a la carcasa,
+por lo que el sensor se ha atornillado con ese eje alineado con el eje~X del sistema
+del cuerpo $\{B\}$, es decir, con el frente del robot. La Figura~\ref{fig:rviz2_scan} muestra un barrido
+obtenido con este montaje.
 
 
 \begin{figure}[H]
@@ -2068,70 +2054,102 @@ decir, con el frente del robot. La Figura~\ref{fig:rviz2_scan} muestra un barrid
     \includegraphics[width=0.8\textwidth]{capitulos/cap3/figuras/rviz2_scan_lidar.png}
     \captionsetup{justification=centering,singlelinecheck=false}
     \caption[Barrido del RPLIDAR~A1M8 visualizado en RViz~2]
-    {Nube de puntos publicada en \texttt{/scan} y visualizada en RViz~2, con los
-    ejes del sistema del cuerpo etiquetados.}
+    {Nube de puntos publicada en \texttt{/scan} y visualizada en RViz~2~\cite{rviz2}}
     {\centering\footnotesize Fuente: Elaboración propia.\par}
     \label{fig:rviz2_scan}
 \end{figure}
+\vspace{-1.5\baselineskip}
 
-\paragraph{Filtrado del barrido}
+Como demostración se ha desarrollado un evitador puramente reactivo en dos
+etapas (Figura~\ref{fig:arquitectura_evitador}): un filtrado de cada barrido y un
+nodo que decide el movimiento.
 
-Antes de llegar al evitador, cada barrido atraviesa el nodo
-\texttt{/scan\_to\_scan\_filter\_chain} del paquete \texttt{laser\_filters}
-\cite{laser_filters}, que encadena dos filtros y publica el resultado en
-\path{/scan_filtered}. Cuando el RPLIDAR~A1M8 no recibe eco, el controlador
-publica una distancia infinita. En interiores, esa ausencia rara vez corresponde
-a espacio libre, sino a superficies oscuras o transparentes, a incidencias
-rasantes o a objetos más próximos que el alcance mínimo del sensor, de 0,15~m
-\cite{rplidar_a1m8_datasheet}. Por ello, el primer filtro
-(\texttt{InterpolationFilter}) sustituye cada tramo sin eco por la media de las
-medidas válidas que lo delimitan, de modo que un cristal o un objeto oscuro
-situado entre dos zonas con eco se percibe como un obstáculo. El segundo
-(\texttt{LaserScanSpeckleFilter}) descarta las medidas a menos de 1~m que no
-forman parte de un grupo de tres medidas consecutivas con diferencias inferiores
-a 0,1~m, lo que suprime los retornos espurios aislados sin eliminar objetos
-delgados reales. El orden es deliberado: aplicados a la inversa, los ecos
-aislados de un objeto oscuro se descartarían antes de servir de referencia a la
-interpolación y el objeto desaparecería del barrido.
+\vspace{-0.5\baselineskip}
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{%
+    \begin{tikzpicture}[
+        >=stealth,
+        every node/.style={align=center},
+        module/.style={rectangle, rounded corners=5pt, draw=black, thick,
+                       fill=gray!8},
+        tag/.style={draw=black, rounded corners=3pt, fill=white, inner sep=3pt},
+        box/.style={rectangle, rounded corners=3pt, draw=black, thick,
+                    fill=white, inner ysep=3pt, minimum height=1.05cm,
+                    font=\scriptsize},
+        filter/.style={box, minimum height=0.85cm},
+        stage/.style={rounded corners=4pt, draw=black, dashed, fill=gray!20},
+        topic/.style={font=\tiny\ttfamily, inner sep=2pt},
+        flow/.style={->, thick, draw=black}
+    ]
 
-\paragraph{Evitador reactivo}
+        \draw[module] (-7.90,-1.00) rectangle (7.90,1.10);
 
-Sobre \path{/scan_filtered} se ha implementado un evitador de obstáculos
-reactivo, inspirado en los controladores de tres sectores habituales en robótica
-móvil. No construye mapas ni planifica trayectorias: en cada barrido toma una
-única decisión. Su nodo, \texttt{/reactive\_node}, pertenece al paquete
-\texttt{obstacle\_avoider}.
+        % Bloque de filtrado: dos filtros de laser_filters encadenados
+        \draw[stage] (-3.415,-0.80) rectangle (2.415,0.85);
+        \node[font=\scriptsize] at (-0.50,0.58)
+            {\textbf{Filtrado}~\cite{laser_filters}\quad
+             \tiny\texttt{/scan\_to\_scan\_filter\_chain}};
+        \node[filter, text width=2.20cm] (interp) at (-2.07,-0.18)
+            {\textbf{Interpolación}\\[-1pt] \tiny\texttt{InterpolationFilter}};
+        \node[filter, text width=2.50cm] (speckle) at (0.92,-0.18)
+            {\textbf{Descarte de ecos}\\[-1pt] \tiny\texttt{LaserScanSpeckleFilter}};
 
-El robot se modela como un círculo de 0,35~m de radio centrado en el LiDAR, que
-contiene los pies durante la marcha, pues estos no se alejan más de 0,294~m del
-centro. De cada barrido se extraen cuatro distancias: la libre a lo largo del
-pasillo frontal, franja de 0,7~m de ancho que el robot barrería al avanzar, y la
-de la medida más cercana en los sectores laterales izquierdo y derecho (de
-$35^\circ$ a $120^\circ$) y en el entorno completo. El pasillo sustituye al
-sector frontal cónico habitual, que se estrecha junto al robot y deja fuera los
-obstáculos situados delante de las patas delanteras. Un sector sin medidas
-válidas se considera ocupado. Con estas distancias, el nodo aplica las reglas
-siguientes, que resume la Figura~\ref{fig:evitador_sectores}:
+        \node[box, text width=2.35cm] (lidar) at (-5.535,-0.18)
+            {RPLIDAR~A1M8\\[-1pt] \tiny\texttt{/sllidar\_node}};
+        \node[box, text width=2.20cm] (alg) at (5.610,-0.18)
+            {\textbf{Algoritmo}~\cite{repositorio_hexapodo}\\[-1pt]
+             \tiny\texttt{/reactive\_node}};
+
+        \draw[flow] (lidar) -- (interp);
+        \draw[flow] (interp) -- (speckle);
+        \draw[flow] (speckle) -- (alg);
+        \node[topic, anchor=south] at (-3.84,-0.18) {/scan};
+        \node[topic, anchor=south] at (3.415,-0.18) {/scan\_filtered};
+
+        \node[tag, font=\scriptsize, anchor=west] at (-7.65,1.10)
+            {\textbf{Evitador de obstáculos}};
+
+    \end{tikzpicture}}
+    \captionsetup{justification=centering,singlelinecheck=false}
+    \caption{Arquitectura en dos etapas del evitador de obstáculos.}
+    \label{fig:arquitectura_evitador}
+\end{figure}
+\vspace{-1\baselineskip}
+
+El filtrado lo realiza el nodo \texttt{/scan\_to\_scan\_filter\_chain} de
+\texttt{laser\_filters}~\cite{laser_filters}, que publica \path{/scan_filtered}. El
+primer filtro rellena cada tramo sin eco con la media de sus extremos, de modo que un
+cristal o un objeto oscuro se percibe como obstáculo, y el segundo descarta las
+medidas aisladas a menos de 1~m, propias de retornos espurios.
+
+El algoritmo sigue el esquema de tres sectores habitual en los evitadores
+reactivos: no construye mapas ni planifica trayectorias, sino que toma una única
+decisión por barrido. El robot se modela como un círculo de 0,35~m de radio
+centrado en el LiDAR, que contiene los pies durante la marcha, y de cada barrido
+se extraen cuatro distancias (Figura~\ref{fig:evitador_sectores}): la libre en el
+pasillo frontal de 0,7~m de ancho que el robot barrería al avanzar ($d_\mathrm{f}$),
+la mínima en cada sector lateral, entre $35^\circ$ y $120^\circ$ ($d_\mathrm{izq}$ y
+$d_\mathrm{der}$), y la mínima en todo el entorno ($d_\mathrm{min}$). Un sector sin
+medidas válidas se considera ocupado. Con ellas se aplican tres reglas:
 
 \begin{enumerate}[label=\textbf{\arabic*.},leftmargin=*,
-                  itemsep=0.25\baselineskip,topsep=0.15\baselineskip]
-    \item \textbf{Avance.} Si el pasillo frontal dispone de al menos 0,5~m libres,
-    el robot avanza a 0,08~m/s y corrige el rumbo para separarse de las paredes
-    laterales situadas a menos de 0,8~m, con una velocidad angular proporcional a
-    la diferencia entre ambos lados y limitada a 0,25~rad/s.
+                  itemsep=0.15\baselineskip,topsep=0.15\baselineskip]
+    \item \textbf{Avance.} Con al menos 0,5~m libres en el pasillo, el robot
+    avanza a 0,08~m/s y, sin cambiar el rumbo, se aparta lateralmente de las
+    paredes situadas a menos de 0,8~m, a una velocidad proporcional a la
+    diferencia entre ambos lados y limitada a 0,015~m/s. Aprovecha así la
+    capacidad omnidireccional del hexápodo.
 
-    \item \textbf{Giro.} Si el pasillo está ocupado pero el círculo del robot está
-    libre, este gira sobre sí mismo a 0,25~rad/s hacia el lateral más despejado
-    hasta que el pasillo vuelve a quedar libre. El sentido se elige al iniciar el
-    giro y se mantiene hasta reanudar el avance, para lo que se exigen 0,6~m en
-    lugar de 0,5~m. Esta histéresis evita que pequeñas variaciones entre barridos
-    consecutivos hagan alternar al robot entre avanzar y girar, o entre ambos
-    sentidos de giro.
+    \item \textbf{Giro.} Si el pasillo está ocupado pero el círculo del robot
+    está libre, gira sobre sí mismo a 0,25~rad/s hacia el lateral más despejado.
+    El sentido se mantiene hasta reanudar el avance, que exige 0,6~m libres en
+    lugar de 0,5~m; esta histéresis evita que pequeñas variaciones entre barridos
+    lo hagan oscilar entre avanzar y girar.
 
     \item \textbf{Parada.} Si alguna medida cae dentro del círculo del robot, se
-    ordena velocidad nula, ya que un giro sobre sí mismo podría llevar una pata
-    contra el obstáculo. Esta condición supone que el LiDAR se encuentra centrado
-    en el cuerpo.
+    ordena velocidad nula, ya que un giro podría llevar una pata contra el
+    obstáculo.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -2143,77 +2161,109 @@ siguientes, que resume la Figura~\ref{fig:evitador_sectores}:
         module/.style={rectangle, rounded corners=5pt, draw=black, thick,
                        fill=gray!8},
         tag/.style={draw=black, rounded corners=3pt, fill=white, inner sep=3pt},
-        box/.style={rectangle, rounded corners=3pt, draw=black, thick,
-                    fill=white, inner ysep=3pt, font=\scriptsize},
-        dec/.style={diamond, draw=black, thick, fill=white, inner sep=1pt,
+        term/.style={rectangle, rounded corners=7pt, draw=black, thick,
+                     fill=gray!25, inner ysep=3pt, text width=3.50cm,
+                     font=\scriptsize},
+        proc/.style={rectangle, draw=black, thick, fill=white, inner ysep=3pt,
+                     text width=3.70cm, font=\scriptsize},
+        dec/.style={diamond, aspect=3, draw=black, thick, fill=white,
+                    inner sep=0.8pt, font=\scriptsize},
+        act/.style={rectangle, rounded corners=3pt, draw=black, thick,
+                    fill=white, inner ysep=3pt, text width=3.40cm,
                     font=\scriptsize},
-        apibox/.style={rectangle, rounded corners=3pt, draw=black, fill=white,
-                       inner xsep=7pt, inner ysep=4pt, font=\tiny},
-        flow/.style={->, thick, draw=black}
+        dim/.style={<->, >=stealth, thin},
+        flow/.style={->, thick, draw=black},
+        bus/.style={thick, draw=black},
+        lbl/.style={font=\tiny, inner sep=1.5pt}
     ]
 
-        \draw[module] (-7.90,-4.10) rectangle (7.90,3.55);
+        \draw[module] (-7.90,-5.05) rectangle (7.90,5.15);
 
-        % ---------------- Sectores (escala 1 m = 5 cm, X_B hacia arriba) ----------------
-        \begin{scope}[shift={(-4.10,-0.35)}, scale=5]
-            % Laterales: de 35 a 120 grados a cada lado
+        % ---------------- Zonas de medida (1 m = 3,9 cm, X_B hacia arriba) ----------------
+        \begin{scope}[shift={(-5.00,-0.25)}, scale=3.9]
+            % Sectores laterales: de 35 a 120 grados a cada lado
             \fill[gray!22, draw=black] (0,0) -- (125:0.70)
                 arc[start angle=125, end angle=210, radius=0.70] -- cycle;
             \fill[gray!22, draw=black] (0,0) -- (-30:0.70)
                 arc[start angle=-30, end angle=55, radius=0.70] -- cycle;
-            % Pasillo frontal: ancho del robot (0,7 m) hasta el umbral de avance
-            \fill[gray!50, draw=black] (-0.35,0) rectangle (0.35,0.50);
-            % Círculo del robot: debe estar libre para girar
+            % Pasillo frontal: ancho del robot y umbral de avance
+            \fill[gray!45, draw=black] (-0.35,0) rectangle (0.35,0.50);
+            % Círculo del robot: debe quedar libre para girar
             \draw[thick, dashed] (0,0) circle[radius=0.35];
-            % Círculo que contiene los pies durante la marcha y LiDAR en el centro
-            \draw[thick, fill=white] (0,0) circle[radius=0.294];
-            \draw[->, thick] (0,0) -- (0,0.15) node[right, font=\tiny, inner sep=1pt] {$X_B$};
-            \draw[->, thick] (0,0) -- (-0.15,0) node[above left, font=\tiny, inner sep=1pt] {$Y_B$};
-            \fill (0,0) circle[radius=0.012];
+            % Ejes del sistema del cuerpo
+            \draw[->, thick] (0,0) -- (0,0.17) node[right, font=\tiny, inner sep=1pt] {$X_B$};
+            \draw[->, thick] (0,0) -- (-0.17,0) node[above, font=\tiny, inner sep=1pt] {$Y_B$};
+            \fill (0,0) circle[radius=0.014];
 
-            \node[font=\tiny] at (90:0.61)
-                {pasillo frontal ($0{,}7$~m)\\avance desde $0{,}5$~m};
-            \node[font=\tiny] at (167.5:0.56) {lateral\\izquierdo};
-            \node[font=\tiny] at (12.5:0.56) {lateral\\derecho};
-            \node[font=\tiny, fill=gray!8, inner sep=1pt] at (0,-0.47)
-                {círculo del robot: $0{,}35$~m};
+            % Cotas del pasillo
+            \draw[dim] (-0.35,0.57) -- node[above, font=\tiny, inner sep=1pt] {$0{,}7$~m} (0.35,0.57);
+            \draw[dim] (0.42,0) -- node[right, font=\tiny, inner sep=1pt] {$0{,}5$~m} (0.42,0.50);
+
+            \node[font=\tiny] at (0,0.425) {pasillo frontal, $d_\mathrm{f}$};
+            \node[font=\tiny] at (172:0.55) {lateral\\izquierdo\\$d_\mathrm{izq}$};
+            \node[font=\tiny] at (5:0.565) {lateral\\derecho\\$d_\mathrm{der}$};
+            \node[font=\tiny] at (0,-0.48) {círculo del robot, $r = 0{,}35$~m\\
+                sectores laterales de $35^\circ$ a $120^\circ$};
         \end{scope}
 
-        % ---------------- Reglas de decisión ----------------
-        \node[dec, aspect=2.6, text width=1.70cm] (d1) at (2.35,2.25)
-            {¿pasillo\\$\geq 0{,}5$~m?};
-        \node[box, text width=2.60cm] (adv) at (6.25,2.25)
-            {\textbf{Avance} a $0{,}08$~m/s\\[-1pt] con corrección lateral};
+        % ---------------- Diagrama de flujo de cada barrido ----------------
+        \node[term] (start) at (0.35,4.60) {Nuevo barrido en \texttt{/scan\_filtered}};
+        \node[dec]  (q0)    at (0.35,3.65) {¿barrido válido?};
+        \node[proc] (dist)  at (0.35,2.50) {Cálculo de distancias\\[-1pt]
+                                            $d_\mathrm{f}$, $d_\mathrm{izq}$, $d_\mathrm{der}$
+                                            y $d_\mathrm{min}$};
+        \node[proc] (umb)   at (0.35,1.45) {$d_\mathrm{u} = 0{,}6$~m si giraba\\[-1pt]
+                                            o $0{,}5$~m si avanzaba};
+        \node[dec]  (q1)    at (0.35,0.35) {¿$d_\mathrm{f} \geq d_\mathrm{u}$?};
+        \node[dec]  (q2)    at (0.35,-0.90) {¿$d_\mathrm{min} \geq r$?};
+        \node[dec]  (q3)    at (0.35,-2.20) {¿sentido\\[-1pt] ya elegido?};
+        \node[proc] (side)  at (0.35,-3.50) {Elección del sentido hacia\\[-1pt]
+                                             el lateral más despejado};
 
-        \node[dec, aspect=2.6, text width=1.70cm] (d2) at (2.35,0.25)
-            {¿círculo\\libre?};
-        \node[box, text width=2.60cm] (stop) at (6.25,0.25)
-            {\textbf{Parada}\\[-1pt] velocidad nula};
+        \node[act] (stop0) at (4.85,3.65) {\textbf{Parada}: $v = 0$};
+        \node[act] (adv)   at (4.85,0.35) {\textbf{Avance}: $v_x = 0{,}08$~m/s\\[-1pt]
+                                           $v_y \propto d_\mathrm{izq} - d_\mathrm{der}$,
+                                           $|v_y| \leq 0{,}015$~m/s};
+        \node[act] (stop1) at (4.85,-0.90) {\textbf{Parada}: $v = 0$};
+        \node[act] (turn)  at (4.85,-2.20) {\textbf{Giro}: $\omega_z = \pm 0{,}25$~rad/s\\[-1pt]
+                                            en el sentido elegido};
+        \node[term, text width=3.40cm] (pub) at (4.85,-4.45)
+            {Publicación en\\[-1pt] \tiny\texttt{/obstacle\_avoider/cmd\_vel}};
 
-        \node[box, text width=5.00cm] (turn) at (3.55,-1.75)
-            {\textbf{Giro} a $0{,}25$~rad/s hacia el lateral más\\[-1pt]
-             despejado hasta liberar $0{,}6$~m de pasillo};
+        % Recorrido principal
+        \draw[flow] (start) -- (q0);
+        \draw[flow] (q0) -- node[lbl, right, pos=0.40] {sí} (dist);
+        \draw[flow] (dist) -- (umb);
+        \draw[flow] (umb) -- (q1);
+        \draw[flow] (q1) -- node[lbl, right, pos=0.35] {no} (q2);
+        \draw[flow] (q2) -- node[lbl, right, pos=0.35] {sí} (q3);
+        \draw[flow] (q3) -- node[lbl, right, pos=0.35] {no} (side);
 
-        \draw[flow] (d1) -- node[above, font=\tiny] {sí} (adv);
-        \draw[flow] (d1) -- node[right, font=\tiny] {no} (d2);
-        \draw[flow] (d2) -- node[above, font=\tiny] {no} (stop);
-        \draw[flow] (d2.south) -- node[right, font=\tiny] {sí} (d2.south |- turn.north);
+        % Salidas hacia las acciones
+        \draw[flow] (q0) -- node[lbl, above] {no} (stop0);
+        \draw[flow] (q1) -- node[lbl, above] {sí} (adv);
+        \draw[flow] (q2) -- node[lbl, above] {no} (stop1);
+        \draw[flow] (q3) -- node[lbl, above] {sí} (turn);
+        \draw[flow] (side.east) -| (turn.south);
+
+        % Todas las acciones terminan publicando la velocidad
+        \draw[bus] (stop0.east) -- (7.30,3.65);
+        \draw[bus] (adv.east)   -- (7.30,0.35);
+        \draw[bus] (stop1.east) -- (7.30,-0.90);
+        \draw[bus] (turn.east)  -- (7.30,-2.20);
+        \draw[flow] (7.30,3.65) |- (pub.east);
 
         % ---------------- Etiquetas del módulo ----------------
-        \node[tag, font=\scriptsize, anchor=west] at (-7.65,3.55)
+        \node[tag, font=\scriptsize, anchor=west] at (-7.65,5.15)
             {\textbf{Nodo \texttt{/reactive\_node}}};
-        \node[tag, font=\tiny\ttfamily, anchor=east] at (7.65,3.55)
+        \node[tag, font=\tiny\ttfamily, anchor=east] at (7.65,5.15)
             {reactive\_node.py};
-
-        \node[apibox, anchor=south] at (0,-3.95)
-            {entrada \texttt{/scan\_filtered} · salida \texttt{/obstacle\_avoider/cmd\_vel} ·
-             una decisión por barrido};
 
     \end{tikzpicture}}
     \captionsetup{justification=centering,singlelinecheck=false}
     \caption[Zonas y reglas del evitador reactivo]
-    {Pasillo frontal, sectores laterales y círculo del robot en el sistema del
-    cuerpo $\{B\}$, y reglas de decisión aplicadas en cada barrido.}
+    {Zonas de medida en el sistema del cuerpo $\{B\}$ y diagrama de flujo
+    aplicado en cada barrido.}
     \label{fig:evitador_sectores}
 \end{figure}
 \vspace{-1\baselineskip}

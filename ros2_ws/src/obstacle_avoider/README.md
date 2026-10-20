@@ -30,8 +30,11 @@ cercana de su zona:
 Un sector sin medidas válidas se considera ocupado. Con esas distancias:
 
 1. **Avanzar.** Si el pasillo tiene al menos 0.50 m libres, avanza a 0.08 m/s y
-   se separa de las paredes laterales a menos de 0.80 m, con un giro
-   proporcional a la diferencia entre ambos lados (máximo 0.25 rad/s).
+   se separa de las paredes laterales a menos de 0.80 m con un desplazamiento
+   lateral proporcional a la diferencia entre ambos lados (máximo 0.015 m/s),
+   sin cambiar el rumbo. Con trípode y periodo de 2 s, el puente admite
+   0.12 m/s en X y 0.05 m/s en Y; avance y corrección suman como máximo el
+   97 % de esos límites, así que el puente no reduce la velocidad de avance.
 2. **Girar.** Si el pasillo está ocupado y el círculo del robot está libre,
    gira sobre sí mismo a 0.25 rad/s hacia el lado con más espacio hasta que el
    pasillo vuelve a estar libre. El lado se elige al empezar el giro y se
@@ -48,6 +51,7 @@ Un sector sin medidas válidas se considera ocupado. Con esas distancias:
 | Pasillo libre para volver a avanzar tras girar (`resume_clearance`) | 0.60 m |
 | Alcance de la corrección lateral (`side_influence`) | 0.80 m |
 | Velocidad de avance (`forward_speed`) | 0.08 m/s |
+| Velocidad lateral máxima al avanzar (`lateral_speed`) | 0.015 m/s |
 | Velocidad de giro (`turn_speed`) | 0.25 rad/s |
 
 ## Filtrado previo del LiDAR

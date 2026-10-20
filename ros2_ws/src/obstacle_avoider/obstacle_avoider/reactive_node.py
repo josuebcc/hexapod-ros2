@@ -31,8 +31,9 @@ class SectorObstacleAvoider(Node):
         self.front_clearance = 0.50     # Distancia libre mínima delante para empezar a avanzar.
         self.resume_clearance = 0.60    # Distancia libre mínima delante para dejar de girar y volver a avanzar. 
         self.robot_radius = 0.35        # Círculo que envuelve el robot: medio ancho del pasillo frontal y espacio libre necesario para girar.
-        self.side_influence = 0.80      # Al avanzar, las paredes laterales más cercanas que esta distancia desvían el rumbo hacia el otro lado.
+        self.side_influence = 0.80      # Al avanzar, las paredes laterales más cercanas que esta distancia desplazan el robot hacia el otro lado.
         self.forward_speed = 0.08       # Velocidad lineal al avanzar.
+        self.lateral_speed = 0.015      # Velocidad lateral máxima al avanzar: junto al avance cabe en los límites del puente (trípode, periodo de 2 s).
         self.turn_speed = 0.25          # Velocidad angular al girar.
 
         # Sectores laterales: de 35 a 120 grados a cada lado.
@@ -95,12 +96,12 @@ class SectorObstacleAvoider(Node):
             needed = self.resume_clearance
 
         if front >= needed:
-            # Avanza separándose de las paredes laterales cercanas.
+            # Avanza separándose de las paredes laterales cercanas con un desplazamiento lateral, sin cambiar el rumbo.
             self.turn_direction = 0.0
             left_near = min(left, self.side_influence)
             right_near = min(right, self.side_influence)
             drive_msg.linear.x = self.forward_speed
-            drive_msg.angular.z = ((left_near - right_near) / self.side_influence * self.turn_speed)
+            drive_msg.linear.y = ((left_near - right_near) / self.side_influence * self.lateral_speed)
         elif surrounding >= self.robot_radius:
             # Gira sobre sí mismo hasta que el pasillo de delante vuelve a estar libre. El lado se elige una vez y se mantiene hasta volver a avanzar.
             if self.turn_direction == 0.0:

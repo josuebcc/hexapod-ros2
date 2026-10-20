@@ -54,13 +54,14 @@ class TestSectorObstacleAvoider(unittest.TestCase):
             self.node.lidar_callback(self.scan)
         return publish.call_args.args[0]
 
-    def assert_components(self, msg, speed, yaw):
+    def assert_components(self, msg, speed, yaw, lateral=0.0):
         self.assertIsInstance(msg, Twist)
         self.assertAlmostEqual(msg.linear.x, speed)
+        self.assertAlmostEqual(msg.linear.y, lateral)
         self.assertAlmostEqual(msg.angular.z, yaw)
         self.assertEqual(
-            (msg.linear.y, msg.linear.z, msg.angular.x, msg.angular.y),
-            (0.0, 0.0, 0.0, 0.0),
+            (msg.linear.z, msg.angular.x, msg.angular.y),
+            (0.0, 0.0, 0.0),
         )
 
     def test_clear_front_moves_straight(self):
@@ -101,15 +102,20 @@ class TestSectorObstacleAvoider(unittest.TestCase):
 
         self.assert_components(msg, 0.0, -self.node.turn_speed)
 
-    def test_wall_on_the_right_steers_left_while_advancing(self):
+    def test_wall_on_the_right_shifts_left_while_advancing(self):
         msg = self.publish_scan(self.sector_scan(right=0.40))
-        steer = (0.80 - 0.40) / self.node.side_influence * self.node.turn_speed
-        self.assert_components(msg, self.node.forward_speed, steer)
+        shift = (0.80 - 0.40) / self.node.side_influence * self.node.lateral_speed
+        self.assert_components(msg, self.node.forward_speed, 0.0, lateral=shift)
 
-    def test_wall_on_the_left_steers_right_while_advancing(self):
+    def test_wall_on_the_left_shifts_right_while_advancing(self):
         msg = self.publish_scan(self.sector_scan(left=0.40))
-        steer = (0.80 - 0.40) / self.node.side_influence * self.node.turn_speed
-        self.assert_components(msg, self.node.forward_speed, -steer)
+        shift = (0.80 - 0.40) / self.node.side_influence * self.node.lateral_speed
+        self.assert_components(msg, self.node.forward_speed, 0.0, lateral=-shift)
+
+    def test_advance_fits_default_gait_limits(self):
+        # Límites del puente con trípode y periodo de 2 s: 0,12 m/s en X y 0,05 m/s en Y.
+        demand = self.node.forward_speed / 0.12 + self.node.lateral_speed / 0.05
+        self.assertLessEqual(demand, 1.0)
 
     def test_far_walls_do_not_steer(self):
         msg = self.publish_scan(self.sector_scan(left=1.0, right=2.0))
