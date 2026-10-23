@@ -56,7 +56,7 @@ Un sector sin medidas válidas se considera ocupado. Con esas distancias:
 
 ## Filtrado previo del LiDAR
 
-El nodo no lee `/lidar/scan` directamente, sino `/lidar/scan_filtered`, que publica
+El nodo no lee `/scan` directamente, sino `/scan_filtered`, que publica
 `scan_to_scan_filter_chain` (paquete `laser_filters`) con la configuración de
 `hexapod_bringup/config/scan_filters.yaml`:
 
@@ -74,8 +74,7 @@ interpolación. Los `NaN` que quedan los ignora el evitador.
 
 ## Topics e integración
 
-- Entrada: `/lidar/scan_filtered`, `sensor_msgs/msg/LaserScan`. El nodo se
-  suscribe a `/scan_filtered` y `hexapod.launch.py` lo remapea.
+- Entrada: `/scan_filtered`, `sensor_msgs/msg/LaserScan`.
 - Salida: `/obstacle_avoider/cmd_vel`, `geometry_msgs/msg/Twist`.
 
 El nodo calcula siempre, pero no publica directamente al robot. El panel web
@@ -95,10 +94,10 @@ ros2 launch hexapod_bringup hexapod.launch.py
 ```
 
 Para ejecutar solamente el evitador (necesita que el filtro esté publicando
-`/lidar/scan_filtered`):
+`/scan_filtered`):
 
 ```bash
-ros2 run obstacle_avoider reactive_node --ros-args -r /scan_filtered:=/lidar/scan_filtered
+ros2 run obstacle_avoider reactive_node
 ```
 
 Para observar sus propuestas:
