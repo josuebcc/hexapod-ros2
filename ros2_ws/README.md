@@ -37,15 +37,15 @@ ros2 launch hexapod_bringup hexapod.launch.py
 
 ## Comunicación con RViz en otro ordenador
 
-Este workspace usa el dominio ROS 2 `30`. En ambos ordenadores —el del robot y
+Este workspace usa el dominio ROS 2 `25`. En ambos ordenadores —el del robot y
 el que ejecuta RViz— hay que cargar:
 
 ```bash
-export ROS_DOMAIN_ID=30
+export ROS_DOMAIN_ID=25
 source /opt/ros/jazzy/setup.bash
 ```
 
 La configuración queda guardada en el `~/.bashrc` de este ordenador. En el
-ordenador del robot debe usarse también el dominio `30`.
+ordenador del robot debe usarse también el dominio `25`.
 
 Los directorios `build/`, `install/` y `log/` son locales y no se versionan.
