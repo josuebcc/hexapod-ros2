@@ -51,34 +51,39 @@ batería ($11{,}1$~V) a $5$~V para alimentar la Raspberry~Pi~4. Este módulo se
 seleccionó por su capacidad para suministrar hasta 5~A, suficiente para cubrir con
 margen la demanda de corriente del subsistema de alto nivel. El sensor LiDAR
 RPLIDAR~A1M8 \cite{rplidar_a1m8_datasheet}, conectado por USB a la
-Raspberry~Pi~4, proporciona la medida del entorno con cobertura angular de 360°
+Raspberry~Pi~4, proporciona la medida del entorno con cobertura angular de $360^\circ$
 (Subsección~\ref{subsec:lidar_ros2}).
 La comunicación entre la Raspberry~Pi~4 y el ESP32 se realiza mediante un enlace
-UART (\textit{Universal Asynchronous Receiver-Transmitter}) bidireccional a 115200~bps (Subsecciones~\ref{subsec:serial_bridge}
+UART bidireccional a 115\,200~bit/s (Subsecciones~\ref{subsec:serial_bridge}
 y~\ref{subsec:esp32_bridge_ros2}), lo que permite desacoplar la toma de decisiones
-de alto nivel del control de bajo nivel de los actuadores. 
+de alto nivel del control de bajo nivel.
 
 La Figura~\ref{fig:montaje_hardware} muestra el montaje del robot y la
 disposición de la electrónica de control y alimentación sobre el chasis.
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.48\textwidth}
+    \makebox[\textwidth][c]{%
+    \begin{minipage}{\textwidth}
         \centering
-        \includegraphics[width=\linewidth]
-            {capitulos/cap3/figuras/montaje_hardware_general.png}
-        \caption{Vista general del montaje hardware del robot.}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]
-            {capitulos/cap3/figuras/montaje_hardware_detalle.png}
-        \caption{Detalle de la electrónica de control y alimentación.}
-    \end{subfigure}
-    \captionsetup{justification=centering}
+        \captionsetup[subfigure]{skip=4pt,justification=centering,singlelinecheck=false}
+        \begin{subfigure}[t]{0.49\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]
+                {capitulos/cap3/figuras/montaje_hardware_general.png}
+            \caption{Vista general del montaje hardware del robot.}
+        \end{subfigure}\hfill
+        \begin{subfigure}[t]{0.49\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]
+                {capitulos/cap3/figuras/montaje_hardware_detalle.png}
+            \caption{Detalle de la electrónica de control y alimentación.}
+        \end{subfigure}
+    \end{minipage}%
+    }
+    \captionsetup{skip=5pt,justification=centering}
     \caption{Montaje hardware del hexápodo: vista general y detalle de la
-    electrónica integrada.}
+    electrónica.}
     {\centering\footnotesize Fuente: Elaboración propia.\par}
     \label{fig:montaje_hardware}
 \end{figure}
@@ -117,7 +122,7 @@ de $9$ a $12$~V.
 
 La conexión de cada actuador consiste en un cable de tres hilos que
 agrupa la alimentación (VDD), la masa (GND) y la línea de datos, de manera que
-potencia y comunicación comparten el mismo mazo de cable. 
+potencia y comunicación comparten el mismo mazo de cables. 
 
 \begin{figure}[hbtp]
     \centering
@@ -400,7 +405,7 @@ que se describirá posteriormente en la capa de alto nivel. Su base de bajo nive
 consiste en una única instrucción Read Data sobre el bloque de cuatro bytes
 comprendido entre Present Load (0x28) y Present Temperature (0x2B): dos para la
 carga estimada, uno para la tensión y otro para la temperatura. El paquete de
-estado devuelto en esa misma transacción contiene además el byte de estado ERR.
+estado devuelto en esa misma transacción contiene además el byte de error ERR.
 Así se obtienen las variables de operación y las alarmas activas sin añadir otra
 lectura al bus.
 
@@ -441,7 +446,7 @@ detección automática del sentido~\cite{txb0104_datasheet}. Su puerto A se
 alimenta a $3{,}3$~V y el B a $5$~V. Tres de sus cuatro canales convierten las
 señales anteriores en \texttt{DIR5V5}, \texttt{TX5V5} y \texttt{RX5V5}. La
 resistencia R4 de $10$~k$\Omega$ mantiene activa la entrada \texttt{OE}, por lo
-que el traductor permanece habilitado de forma permanente. 
+que el traductor queda siempre habilitado.
 
 Una vez adaptados los niveles, el buffer triestado SN74LVC2G241
 convierte las líneas independientes de transmisión y recepción en una única
@@ -489,7 +494,7 @@ descrito en la Subsección~\ref{subsec:driver_ax12}.
     \captionsetup{justification=centering}
     \caption{PCB en 3D.}
     \label{fig:pcb_3d_halfduplex}
-    {\footnotesize Fuente: Altium Designer~\cite{altium_designer}.}
+    {\footnotesize Fuente: Elaboración propia mediante Altium Designer~\cite{altium_designer}.}
     \vspace{-0.4\baselineskip}
 \end{wrapfigure}
 
@@ -539,7 +544,7 @@ superposición.
     \captionsetup{justification=centering}
     \caption{Encaminado en las capas externas de la PCB.}
     \label{fig:pcb_capas_2d}
-    {\footnotesize Fuente: Altium Designer~\cite{altium_designer}.}
+    {\footnotesize Fuente: Elaboración propia mediante Altium Designer~\cite{altium_designer}.}
 \end{figure}
 \vspace{-1\baselineskip}
 
@@ -555,7 +560,7 @@ superposición.
 
 
 {\rightskip=0pt plus 2em
-La Figura~\ref{fig:osciloscopio_dir_datos} muestra una captura de osciloscopio. La señal \texttt{DATOS} se representa en el canal~1 (amarillo) y la señal \texttt{DIR}, en el canal~2 (cian), con escalas de $20~\mu\text{s}/\text{div}$ y $1~\text{V}/\text{div}$, con un desplazamiento vertical para facilitar su identificación. Se observa cómo \texttt{DIR} pasa a nivel alto antes del inicio de la trama de lectura y permanece en dicho estado durante toda la transmisión. Tras el último bit, retorna a nivel bajo, conmutando el circuito al estado de escucha para recibir la respuesta del servomotor al que se dirige la instrucción.\par}
+La Figura~\ref{fig:osciloscopio_dir_datos} muestra una captura de osciloscopio. La señal \texttt{DATOS} se representa en el canal~1 (amarillo) y la señal \texttt{DIR}, en el canal~2 (cian), con escalas de $20~\mu\text{s}/\text{div}$ y $1~\text{V}/\text{div}$, y un desplazamiento vertical que facilita su identificación. Se observa cómo \texttt{DIR} pasa a nivel alto antes del inicio de la trama de lectura y permanece en dicho estado durante toda la transmisión. Tras el último bit, retorna a nivel bajo, conmutando el circuito al estado de escucha para recibir la respuesta del servomotor al que se dirige la instrucción.\par}
 
 
 \newpage
@@ -904,7 +909,7 @@ de geometría.
 
 Tras cada ciclo, \hyperref[subsec:locomotion_task]{\texttt{locomotion\_task}}
 activa \hyperref[subsec:diagnostic]{\texttt{diagnostic}} para consultar la
-telemetría o acceder a los registros de los actuadores, tareas necesarias por los esfuerzos electromecánicos a los que están sometidos los motores. Su menor prioridad reduce
+telemetría o acceder a los registros de los actuadores, tareas necesarias debido a los esfuerzos electromecánicos a los que están sometidos los motores. Su menor prioridad reduce
 la interferencia con el control periódico. La comunicación serie se ejecuta en el
 núcleo~0 del ESP32, mientras que la locomoción y el diagnóstico se ejecutan en el
 núcleo~1.
@@ -952,7 +957,7 @@ Figura~\ref{fig:arquitectura_matrix_math}.
     ]
 
         \node[vectorapi] (vectors) at (-7.32,0) {
-            {\scriptsize\textbf{Escalar/ Vector}}\\
+            {\scriptsize\textbf{Escalar/Vector}}\\
             {\scriptsize\texttt{vec3}}\\[2pt]
             \texttt{scalar\_clamp}\\[-1pt]
             \texttt{scalar\_square}\\[-1pt]
@@ -1518,7 +1523,7 @@ El recorrido comienza con \texttt{body\_to\_leg}, que expresa el objetivo en el
 sistema local de la pata mediante la Ec.~\ref{eq:Tlb}. A continuación,
 \texttt{leg\_ik} aplica la solución geométrica de la
 Subsección~\ref{subsec:theory_ik} y selecciona la rama compatible con el
-montaje. Antes de resolverla comprueba la condición
+montaje. Antes de resolver la IK, comprueba la condición
 $|L_f-L_t|\leq Hip\leq L_f+L_t$; si el objetivo no es alcanzable, devuelve
 \texttt{false}. Finalmente, \texttt{leg\_compute\_deg} convierte la solución a grados y aplica
 el ajuste de la Ec.~\ref{eq:calibracion_theta_servo}.
@@ -1621,8 +1626,8 @@ instantánea completa, por lo que las tareas pueden trabajar con datos coherente
 sin mantener el bloqueo.
 
 \texttt{serial\_bridge} se fija al núcleo~0 y ejecuta un bucle sin periodo
-estricto. En cada vuelta espera datos de UART durante un máximo de 10~ms,
-tiempo durante el cual el núcleo atiende otras tareas. Por ello, sin
+estricto. En cada vuelta espera datos de la UART hasta 10~ms,
+tiempo en el que el núcleo atiende otras tareas. Por ello, sin
 tráfico el bucle se repite aproximadamente cada 10~ms, aunque su periodo no es
 exacto. Tras procesar una orden, consulta el estado: \texttt{ODO} se envía cada
 segundo y \texttt{AXH}, \texttt{AXR} y \texttt{AXW} solo cuando hay datos nuevos.
@@ -1865,7 +1870,7 @@ implementación completa está disponible en el repositorio del proyecto
         \path{/hexapod/body_pose} &
         \path{geometry_msgs/msg/Pose} &
         \textbf{Salida} &
-        Orientación y desplazamiento de cuerpo aplicados por el firmware. \\
+        Orientación y desplazamiento del cuerpo aplicados por el firmware. \\
 
         \path{/hexapod/servo_health} &
         \path{std_msgs/msg/String} &
@@ -1909,14 +1914,14 @@ implementación completa está disponible en el repositorio del proyecto
     \]
     \endgroup
 
-    Para $(v_x,v_y)=(0{,}12,0{,}05)$~m/s, la demanda normalizada vale
-    $120/120+50/50=2$ y el factor $1/2$ produce $(v_x,v_y)=(60,25)$~mm/s, conservando la dirección.
+    Para $(v_x,v_y)=(0{,}12;\,0{,}05)$~m/s, la demanda normalizada vale
+    $120/120+50/50=2$ y el factor $1/2$ produce $(v_x,v_y)=(60;\,25)$~mm/s, conservando la dirección.
 
     \item \textbf{Configuración y diagnóstico.}
     Las operaciones discretas se reciben mediante
     \path{/hexapod/robot_command}. Este tópico transporta cambios de modo
     (\texttt{MOD}), periodo y altura de paso (\texttt{GAT}), postura
-    (\texttt{POS}), suavizado (\texttt{SMO}), reinicio de odometría y accesos a los
+    (\texttt{POS}), suavizado (\texttt{SMO}), reinicio de odometría (\texttt{RST}) y accesos a los
     registros de los actuadores (\texttt{REG}/\texttt{WREG}). Las órdenes
     \texttt{CMD} se descartan expresamente en este canal, de modo que el movimiento
     solo pueda introducirse mediante la interfaz estándar \texttt{Twist}. Los cambios
@@ -1940,7 +1945,7 @@ telemetría. Como ejemplo, la Figura~\ref{fig:ros2_teleop_graph} muestra
 \texttt{/teleop\_twist\_keyboard}~\cite{ros2_teleop_twist_keyboard} publicando
 mensajes \texttt{geometry\_msgs/msg/Twist} en \path{/hexapod/cmd_vel}.
 
-
+\vspace{-0.5\baselineskip}
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{capitulos/cap3/figuras/ros2_rqt_teleop.png}
@@ -1956,8 +1961,7 @@ mensajes \texttt{geometry\_msgs/msg/Twist} en \path{/hexapod/cmd_vel}.
 Otra integración habitual en este tipo de soluciones consiste en conectar
 periféricos externos mediante paquetes de adaptación. En el caso de un mando de
 videojuegos, el paquete \texttt{joy}~\cite{ros2_joy} publica su estado mediante mensajes
-\path{sensor_msgs/msg/Joy}, lo que ofrece otra posible vía de
-integración. Sin embargo, la necesidad de disponer de una interfaz que se adaptase al
+\path{sensor_msgs/msg/Joy}, lo que ofrece una alternativa. Sin embargo, la necesidad de disponer de una interfaz que se adaptase al
 conjunto de tópicos y que, a su vez, sirviera como herramienta de supervisión, llevó a desarrollar un panel web específico, que se describe en la
 Subsección~\ref{subsec:web_panel_ros2}.
 
@@ -2021,23 +2025,19 @@ Figura~\ref{fig:ros2_rqt_graph}, y sus vistas se recogen a mayor tamaño en el
 \label{subsec:lidar_ros2}
 
 
-Dotar a la plataforma de percepción del entorno es el primer paso hacia un sistema de
-navegación. Se ha optado por un LiDAR porque permite obtener resultados inmediatos,
-como una navegación reactiva basada en la detección de obstáculos.
-
-\begin{wrapfigure}[13]{r}{0.45\textwidth}
+\begin{wrapfigure}[12]{r}{0.45\textwidth}
   \vspace{-0.3\baselineskip}
   \centering
   \includegraphics[width=0.9\linewidth]{capitulos/cap3/figuras/rplidar_a1m8.png}
   \captionsetup{justification=centering}
-  \caption{LiDAR RPLIDAR~A1M8 y su sistema de referencia.}
+  \caption{LiDAR RPLIDAR~A1M8.}
   \footnotesize Fuente: SLAMTEC~\cite{rplidar_a1m8_datasheet} y
   \texttt{sllidar\_ros2}~\cite{sllidar_ros2}.
   \label{fig:rplidar_a1m8}
 \end{wrapfigure}
 
-El sensor es el RPLIDAR~A1M8 \cite{rplidar_a1m8_datasheet}, presentado en la
-Sección~\ref{sec:arquitectura_general}, que mide distancias por triangulación láser.
+Para dotar a la plataforma de percepción del entorno se ha integrado un LiDAR. El sensor es el RPLIDAR~A1M8 \cite{rplidar_a1m8_datasheet}, un LiDAR de
+triangulación láser presentado en la Sección~\ref{sec:arquitectura_general}.
 Su integración en ROS~2 corre a cargo de \texttt{sllidar\_ros2}~\cite{sllidar_ros2},
 el controlador que mantiene el propio fabricante, cuyo nodo publica el tópico
 \path{/scan} con mensajes estándar \path{sensor_msgs/msg/LaserScan}~\cite{ros2_docs}.
@@ -2051,18 +2051,16 @@ obtenido con este montaje.
 \begin{figure}[H]
     \vspace{-2.3pt}
     \centering
-    \includegraphics[width=0.8\textwidth]{capitulos/cap3/figuras/rviz2_scan_lidar.png}
+    \includegraphics[width=0.7\textwidth]{capitulos/cap3/figuras/rviz2_scan_lidar.png}
     \captionsetup{justification=centering,singlelinecheck=false}
     \caption[Barrido del RPLIDAR~A1M8 visualizado en RViz~2]
-    {Nube de puntos publicada en \texttt{/scan} y visualizada en RViz~2~\cite{rviz2}}
+    {Nube de puntos publicada en \texttt{/scan} y visualizada en RViz~2~\cite{rviz2}.}
     {\centering\footnotesize Fuente: Elaboración propia.\par}
     \label{fig:rviz2_scan}
 \end{figure}
 \vspace{-1.5\baselineskip}
 
-Como demostración se ha desarrollado un evitador puramente reactivo en dos
-etapas (Figura~\ref{fig:arquitectura_evitador}): un filtrado de cada barrido y un
-nodo que decide el movimiento.
+Esta base permite desarrollar un evitador reactivo en dos etapas (Figura~\ref{fig:arquitectura_evitador}), una para filtrar los datos del LiDAR y otra para decidir el movimiento del robot.
 
 \vspace{-0.5\baselineskip}
 \begin{figure}[H]
@@ -2117,154 +2115,151 @@ nodo que decide el movimiento.
 \end{figure}
 \vspace{-1\baselineskip}
 
-El filtrado lo realiza el nodo \texttt{/scan\_to\_scan\_filter\_chain} de
-\texttt{laser\_filters}~\cite{laser_filters}, que publica \path{/scan_filtered}. El
-primer filtro rellena cada tramo sin eco con la media de sus extremos, de modo que un
-cristal o un objeto oscuro se percibe como obstáculo, y el segundo descarta las
-medidas aisladas a menos de 1~m, propias de retornos espurios.
+\textbf{Filtrado.} El nodo \texttt{/scan\_to\_scan\_filter\_chain} de
+\texttt{laser\_filters}~\cite{laser_filters} rellena los tramos sin eco a partir
+de sus extremos y elimina retornos aislados a menos de 1~m. Publica el resultado
+en \path{/scan_filtered}. Esto reduce ecos espurios, aunque puede eliminar
+obstáculos pequeños y no garantiza detectar cristales u objetos oscuros.
 
-El algoritmo sigue el esquema de tres sectores habitual en los evitadores
-reactivos: no construye mapas ni planifica trayectorias, sino que toma una única
-decisión por barrido. El robot se modela como un círculo de 0,35~m de radio
-centrado en el LiDAR, que contiene los pies durante la marcha, y de cada barrido
-se extraen cuatro distancias (Figura~\ref{fig:evitador_sectores}): la libre en el
-pasillo frontal de 0,7~m de ancho que el robot barrería al avanzar ($d_\mathrm{f}$),
-la mínima en cada sector lateral, entre $35^\circ$ y $120^\circ$ ($d_\mathrm{izq}$ y
-$d_\mathrm{der}$), y la mínima en todo el entorno ($d_\mathrm{min}$). Un sector sin
-medidas válidas se considera ocupado. Con ellas se aplican tres reglas:
-
-\begin{enumerate}[label=\textbf{\arabic*.},leftmargin=*,
-                  itemsep=0.15\baselineskip,topsep=0.15\baselineskip]
-    \item \textbf{Avance.} Con al menos 0,5~m libres en el pasillo, el robot
-    avanza a 0,08~m/s y, sin cambiar el rumbo, se aparta lateralmente de las
-    paredes situadas a menos de 0,8~m, a una velocidad proporcional a la
-    diferencia entre ambos lados y limitada a 0,015~m/s. Aprovecha así la
-    capacidad omnidireccional del hexápodo.
-
-    \item \textbf{Giro.} Si el pasillo está ocupado pero el círculo del robot
-    está libre, gira sobre sí mismo a 0,25~rad/s hacia el lateral más despejado.
-    El sentido se mantiene hasta reanudar el avance, que exige 0,6~m libres en
-    lugar de 0,5~m; esta histéresis evita que pequeñas variaciones entre barridos
-    lo hagan oscilar entre avanzar y girar.
-
-    \item \textbf{Parada.} Si alguna medida cae dentro del círculo del robot, se
-    ordena velocidad nula, ya que un giro podría llevar una pata contra el
-    obstáculo.
-\end{enumerate}
+\textbf{Decisión.} El nodo \texttt{/reactive\_node} obtiene del barrido filtrado
+la distancia libre en el pasillo frontal de 0,7~m de ancho ($d_\mathrm{f}$), los
+mínimos de los sectores laterales de $35^\circ$ a $120^\circ$
+($d_\mathrm{izq}$ y $d_\mathrm{der}$) y el mínimo de todo el barrido ($d_\mathrm{min}$).
+Para girar exige un círculo libre de radio $r=0{,}35$~m centrado en el LiDAR.
+La Figura~\ref{fig:evitador_sectores} recoge la lógica de decisión.
 
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{%
     \begin{tikzpicture}[
         >=stealth,
-        every node/.style={align=center},
-        module/.style={rectangle, rounded corners=5pt, draw=black, thick,
-                       fill=gray!8},
-        tag/.style={draw=black, rounded corners=3pt, fill=white, inner sep=3pt},
-        term/.style={rectangle, rounded corners=7pt, draw=black, thick,
-                     fill=gray!25, inner ysep=3pt, text width=3.50cm,
-                     font=\scriptsize},
-        proc/.style={rectangle, draw=black, thick, fill=white, inner ysep=3pt,
-                     text width=3.70cm, font=\scriptsize},
-        dec/.style={diamond, aspect=3, draw=black, thick, fill=white,
-                    inner sep=0.8pt, font=\scriptsize},
-        act/.style={rectangle, rounded corners=3pt, draw=black, thick,
-                    fill=white, inner ysep=3pt, text width=3.40cm,
-                    font=\scriptsize},
-        dim/.style={<->, >=stealth, thin},
-        flow/.style={->, thick, draw=black},
-        bus/.style={thick, draw=black},
-        lbl/.style={font=\tiny, inner sep=1.5pt}
+        every node/.style={align=center, font=\sffamily\fontsize{9}{11}\selectfont},
+        line width=0.6pt,
+        term/.style={rectangle, rounded corners=4pt, draw=black!75,
+                     fill=black!6, text width=3.65cm, minimum height=0.70cm,
+                     inner sep=4pt},
+        proc/.style={rectangle, draw=black!75, fill=white,
+                     text width=3.65cm, inner sep=4pt},
+        dec/.style={diamond, aspect=3.7, draw=black!75, fill=white,
+                    inner xsep=3pt, inner ysep=2pt,
+                    minimum width=3.20cm, minimum height=0.70cm},
+        act/.style={rectangle, rounded corners=3pt, draw=black!75,
+                    fill=black!4, text width=3.35cm, inner sep=4pt},
+        flow/.style={->, draw=black!80, rounded corners=2pt},
+        lbl/.style={font=\sffamily\fontsize{9}{11}\selectfont,
+                    fill=white, inner sep=1.5pt},
+        dim/.style={<->, thin, draw=black!70}
     ]
-
-        \draw[module] (-7.90,-5.05) rectangle (7.90,5.15);
-
-        % ---------------- Zonas de medida (1 m = 3,9 cm, X_B hacia arriba) ----------------
-        \begin{scope}[shift={(-5.00,-0.25)}, scale=3.9]
-            % Sectores laterales: de 35 a 120 grados a cada lado
-            \fill[gray!22, draw=black] (0,0) -- (125:0.70)
-                arc[start angle=125, end angle=210, radius=0.70] -- cycle;
-            \fill[gray!22, draw=black] (0,0) -- (-30:0.70)
-                arc[start angle=-30, end angle=55, radius=0.70] -- cycle;
-            % Pasillo frontal: ancho del robot y umbral de avance
-            \fill[gray!45, draw=black] (-0.35,0) rectangle (0.35,0.50);
-            % Círculo del robot: debe quedar libre para girar
-            \draw[thick, dashed] (0,0) circle[radius=0.35];
-            % Ejes del sistema del cuerpo
-            \draw[->, thick] (0,0) -- (0,0.17) node[right, font=\tiny, inner sep=1pt] {$X_B$};
-            \draw[->, thick] (0,0) -- (-0.17,0) node[above, font=\tiny, inner sep=1pt] {$Y_B$};
-            \fill (0,0) circle[radius=0.014];
-
-            % Cotas del pasillo
-            \draw[dim] (-0.35,0.57) -- node[above, font=\tiny, inner sep=1pt] {$0{,}7$~m} (0.35,0.57);
-            \draw[dim] (0.42,0) -- node[right, font=\tiny, inner sep=1pt] {$0{,}5$~m} (0.42,0.50);
-
-            \node[font=\tiny] at (0,0.425) {pasillo frontal, $d_\mathrm{f}$};
-            \node[font=\tiny] at (172:0.55) {lateral\\izquierdo\\$d_\mathrm{izq}$};
-            \node[font=\tiny] at (5:0.565) {lateral\\derecho\\$d_\mathrm{der}$};
-            \node[font=\tiny] at (0,-0.48) {círculo del robot, $r = 0{,}35$~m\\
-                sectores laterales de $35^\circ$ a $120^\circ$};
+        % X_B hacia arriba, Y_B hacia la izquierda; 1 m = 3,1 cm.
+        % El radio dibujado de los sectores indica su influencia lateral.
+        \begin{scope}[shift={(2.55,-3.20)}, scale=3.1]
+            \filldraw[fill=black!8, draw=black!45] (0,0) -- (125:0.80)
+                arc[start angle=125, end angle=210, radius=0.80] -- cycle;
+            \filldraw[fill=black!8, draw=black!45] (0,0) -- (-30:0.80)
+                arc[start angle=-30, end angle=55, radius=0.80] -- cycle;
+            \filldraw[fill=black!18, draw=black!65]
+                (-0.35,0) rectangle (0.35,0.50);
+            \draw[densely dashed, black!65]
+                (-0.35,0.50) -- (-0.35,0.60) -- (0.35,0.60) -- (0.35,0.50);
+            \draw[dashed, line width=0.85pt] (0,0) circle[radius=0.35];
+            \draw[->] (0,0) -- (0,0.23)
+                node[right, inner sep=2pt] {$X_B$};
+            \draw[->] (0,0) -- (-0.23,0)
+                node[above, inner sep=2pt] {$Y_B$};
+            \fill (0,0) circle[radius=0.018];
+            \node at (0,-0.17) {LiDAR};
+            \draw[dim] (-0.35,0.72) --
+                node[above, inner sep=2pt] {$0{,}7$~m} (0.35,0.72);
+            \draw[dim] (0.46,0) --
+                node[right, inner sep=2pt] {$0{,}5$~m} (0.46,0.50);
+            \node at (0,0.40) {$d_\mathrm{f}$};
+            \node at (165:0.64) {$d_\mathrm{izq}$};
+            \node at (15:0.64) {$d_\mathrm{der}$};
+            \draw[black!65] (-0.25,-0.25) -- (-0.43,-0.46) -- (-0.68,-0.46);
+            \node[anchor=north west, align=left, inner sep=2pt]
+                at (-0.69,-0.47) {$r=0{,}35$~m};
         \end{scope}
 
-        % ---------------- Diagrama de flujo de cada barrido ----------------
-        \node[term] (start) at (0.35,4.60) {Nuevo barrido en \texttt{/scan\_filtered}};
-        \node[dec]  (q0)    at (0.35,3.65) {¿barrido válido?};
-        \node[proc] (dist)  at (0.35,2.50) {Cálculo de distancias\\[-1pt]
-                                            $d_\mathrm{f}$, $d_\mathrm{izq}$, $d_\mathrm{der}$
-                                            y $d_\mathrm{min}$};
-        \node[proc] (umb)   at (0.35,1.45) {$d_\mathrm{u} = 0{,}6$~m si giraba\\[-1pt]
-                                            o $0{,}5$~m si avanzaba};
-        \node[dec]  (q1)    at (0.35,0.35) {¿$d_\mathrm{f} \geq d_\mathrm{u}$?};
-        \node[dec]  (q2)    at (0.35,-0.90) {¿$d_\mathrm{min} \geq r$?};
-        \node[dec]  (q3)    at (0.35,-2.20) {¿sentido\\[-1pt] ya elegido?};
-        \node[proc] (side)  at (0.35,-3.50) {Elección del sentido hacia\\[-1pt]
-                                             el lateral más despejado};
+        \node[align=left, anchor=north west, text width=5.05cm]
+            at (0.10,-5.30)
+            {\setlength{\parskip}{0pt}
+             \renewcommand{\arraystretch}{1.15}
+             \begin{tabularx}{5.05cm}{@{}l@{\hspace{6pt}}>{\raggedright\arraybackslash}X@{}}
+                 $v_x$ & Velocidad de avance (m/s). \\
+                 $v_y$ & Velocidad lateral (m/s), positiva a la izquierda. \\
+                 $\omega_z$ & Velocidad de giro (rad/s), positiva a la izquierda. \\
+                 $s$ & Sentido almacenado: $+1$ izquierda, $-1$ derecha y $0$ sin sentido elegido. Se inicia en cero y se borra al avanzar. \\
+                 $d_\mathrm{u}$ & Umbral de avance: $0{,}5$~m si $s=0$ y $0{,}6$~m si $s\neq0$. \\
+             \end{tabularx}};
 
-        \node[act] (stop0) at (4.85,3.65) {\textbf{Parada}: $v = 0$};
-        \node[act] (adv)   at (4.85,0.35) {\textbf{Avance}: $v_x = 0{,}08$~m/s\\[-1pt]
-                                           $v_y \propto d_\mathrm{izq} - d_\mathrm{der}$,
-                                           $|v_y| \leq 0{,}015$~m/s};
-        \node[act] (stop1) at (4.85,-0.90) {\textbf{Parada}: $v = 0$};
-        \node[act] (turn)  at (4.85,-2.20) {\textbf{Giro}: $\omega_z = \pm 0{,}25$~rad/s\\[-1pt]
-                                            en el sentido elegido};
-        \node[term, text width=3.40cm] (pub) at (4.85,-4.45)
-            {Publicación en\\[-1pt] \tiny\texttt{/obstacle\_avoider/cmd\_vel}};
+        % Columna de evaluación y columna de acciones, sin cruces de flechas.
+        \node[term] (start) at (8.10,-0.85)
+            {\texttt{/scan\_filtered}};
+        \node[dec] (q0) at (8.10,-2.10)
+            {¿Hay muestras?};
+        \node[proc] (dist) at (8.10,-3.90)
+            {Calcular las distancias\\[2pt]
+             $d_\mathrm{u}=0{,}5$~m si $s=0$\\
+             $d_\mathrm{u}=0{,}6$~m si $s\neq0$};
+        \node[dec] (q1) at (8.10,-5.55) {¿$d_\mathrm{f}\geq d_\mathrm{u}$?};
+        \node[dec] (q2) at (8.10,-7.25) {¿$d_\mathrm{min}\geq r$?};
+        \node[proc] (side) at (8.10,-9.05)
+            {Si $s\neq0$, conservarlo.\\[2pt]
+             Si $s=0$, elegir:\\
+             $s=+1$ si $d_\mathrm{izq}\geq d_\mathrm{der}$\\
+             $s=-1$ si $d_\mathrm{izq}<d_\mathrm{der}$};
 
-        % Recorrido principal
+        \node[act] (stop0) at (13.20,-2.10)
+            {\textbf{Parada}\\$v_x=v_y=\omega_z=0$};
+        \node[act] (adv) at (13.20,-5.55)
+            {\textbf{Avance}\\$v_x=0{,}08$~m/s, $\omega_z=0$\\
+             Corrección lateral en $v_y$\\$s\leftarrow0$};
+        \node[act] (stop1) at (13.20,-7.25)
+            {\textbf{Parada}\\$v_x=v_y=\omega_z=0$};
+        \node[act] (turn) at (13.20,-9.05)
+            {\textbf{Giro}\\$v_x=v_y=0$\\
+             $\omega_z=s\,0{,}25$~rad/s};
+        \node[term, text width=8.30cm] (pub) at (10.60,-10.80)
+            {Publicar en\\\texttt{/obstacle\_avoider/cmd\_vel}};
+
         \draw[flow] (start) -- (q0);
-        \draw[flow] (q0) -- node[lbl, right, pos=0.40] {sí} (dist);
-        \draw[flow] (dist) -- (umb);
-        \draw[flow] (umb) -- (q1);
-        \draw[flow] (q1) -- node[lbl, right, pos=0.35] {no} (q2);
-        \draw[flow] (q2) -- node[lbl, right, pos=0.35] {sí} (q3);
-        \draw[flow] (q3) -- node[lbl, right, pos=0.35] {no} (side);
-
-        % Salidas hacia las acciones
+        \draw[flow] (q0) -- node[lbl, right] {sí} (dist);
+        \draw[flow] (dist) -- (q1);
+        \draw[flow] (q1) -- node[lbl, right] {no} (q2);
+        \draw[flow] (q2) -- node[lbl, right] {sí} (side);
         \draw[flow] (q0) -- node[lbl, above] {no} (stop0);
         \draw[flow] (q1) -- node[lbl, above] {sí} (adv);
         \draw[flow] (q2) -- node[lbl, above] {no} (stop1);
-        \draw[flow] (q3) -- node[lbl, above] {sí} (turn);
-        \draw[flow] (side.east) -| (turn.south);
+        \draw[flow] (side) -- (turn);
 
-        % Todas las acciones terminan publicando la velocidad
-        \draw[bus] (stop0.east) -- (7.30,3.65);
-        \draw[bus] (adv.east)   -- (7.30,0.35);
-        \draw[bus] (stop1.east) -- (7.30,-0.90);
-        \draw[bus] (turn.east)  -- (7.30,-2.20);
-        \draw[flow] (7.30,3.65) |- (pub.east);
+        % Las cuatro acciones convergen en una única publicación.
+        \draw[black!70] (stop0.east) -- (15.50,-2.10);
+        \draw[black!70] (adv.east) -- (15.50,-5.55);
+        \draw[black!70] (stop1.east) -- (15.50,-7.25);
+        \draw[black!70] (turn.east) -- (15.50,-9.05);
+        \draw[flow] (15.50,-2.10) |- (pub.east);
+    \end{tikzpicture}
 
-        % ---------------- Etiquetas del módulo ----------------
-        \node[tag, font=\scriptsize, anchor=west] at (-7.65,5.15)
-            {\textbf{Nodo \texttt{/reactive\_node}}};
-        \node[tag, font=\tiny\ttfamily, anchor=east] at (7.65,5.15)
-            {reactive\_node.py};
-
-    \end{tikzpicture}}
-    \captionsetup{justification=centering,singlelinecheck=false}
+    \captionsetup{skip=3pt,justification=centering,singlelinecheck=false}
     \caption[Zonas y reglas del evitador reactivo]
-    {Zonas de medida en el sistema del cuerpo $\{B\}$ y diagrama de flujo
-    aplicado en cada barrido.}
+    {Zonas de medida, lógica de decisión y variables del evitador reactivo.}
     \label{fig:evitador_sectores}
 \end{figure}
-\vspace{-1\baselineskip}
+\vspace{-1.0\baselineskip}
 
+El sentido de giro se mantiene hasta reanudar el avance, que requiere 0,6~m libres delante en lugar de los 0,5~m del avance normal. Esta histéresis evita
+alternar entre avance y giro por pequeñas variaciones entre barridos. Además, durante el avance se añade una corrección lateral para separarse de las paredes
+cercanas. La Figura~\ref{fig:ros2_rqt_evitador} muestra las conexiones del
+evitador con el resto del sistema.
+
+\begingroup
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=1.2\textwidth]{capitulos/cap3/figuras/lidarrqt.png}}
+    \captionsetup{skip=4pt,justification=centering,singlelinecheck=false}
+    \caption[Integración del evitador reactivo en ROS~2]
+    {Grafo ROS~2 con el evitador reactivo, visualizado con \texttt{rqt\_graph}.}
+    {\centering\footnotesize Fuente: Elaboración propia.\par}
+    \label{fig:ros2_rqt_evitador}
+\end{figure}
+\endgroup
