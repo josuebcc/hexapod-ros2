@@ -2,11 +2,15 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    GroupAction,
+    IncludeLaunchDescription,
+)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch_ros.actions import Node, SetRemap
 
 
 def launch_arg(name, default_value, description):
@@ -101,28 +105,38 @@ def generate_launch_description():
             condition=IfCondition(start_web),
             parameters=[web_params_file],
         ),
-        # Limpia /scan y publica /scan_filtered, que es lo que usa el evitador.
+        # Los topics del LiDAR se agrupan bajo /lidar (rqt_graph los dibuja en
+        # su propio bloque); los nodos se quedan en la raíz, como el resto.
+        # Limpia /lidar/scan y publica /lidar/scan_filtered, que es lo que usa el evitador.
         Node(
             package='laser_filters',
             executable='scan_to_scan_filter_chain',
             name='scan_to_scan_filter_chain',
             output='screen',
             parameters=[scan_filters_file],
+            remappings=[
+                ('scan', '/lidar/scan'),
+                ('scan_filtered', '/lidar/scan_filtered'),
+            ],
         ),
         Node(
             package='obstacle_avoider',
             executable='reactive_node',
             name='reactive_node',
             output='screen',
+            remappings=[('/scan_filtered', '/lidar/scan_filtered')],
         ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(default_lidar_launch),
-            condition=IfCondition(start_lidar),
-            launch_arguments={
-                'serial_port': lidar_port,
-                'serial_baudrate': lidar_baud,
-            }.items(),
-        ),
+        GroupAction([
+            SetRemap(src='scan', dst='/lidar/scan'),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(default_lidar_launch),
+                condition=IfCondition(start_lidar),
+                launch_arguments={
+                    'serial_port': lidar_port,
+                    'serial_baudrate': lidar_baud,
+                }.items(),
+            ),
+        ]),
     ]
 
     return LaunchDescription(actions)

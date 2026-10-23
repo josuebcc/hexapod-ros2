@@ -1,5 +1,5 @@
-# Filtros aplicados a /scan antes del evitador; el resultado se publica en
-# /scan_filtered. El orden importa: si se quitaran primero las medidas sueltas,
+# Filtros aplicados a /lidar/scan antes del evitador; el resultado se publica en
+# /lidar/scan_filtered. El orden importa: si se quitaran primero las medidas sueltas,
 # sus NaN harían que la interpolación rellenara los huecos con NaN y un objeto
 # oscuro que solo devuelve ecos sueltos desaparecería del barrido.
 scan_to_scan_filter_chain:

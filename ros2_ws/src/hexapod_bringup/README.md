@@ -17,16 +17,18 @@ El argumento `start_web` permite omitir el panel y `start_lidar` permite arranca
 sin el sensor.
 
 `hexapod.launch.py` arranca también `scan_to_scan_filter_chain` (paquete
-`laser_filters`), que limpia `/scan` y publica `/scan_filtered`, y
-`reactive_node`, que consume `/scan_filtered` y publica propuestas
-`geometry_msgs/msg/Twist` en `/obstacle_avoider/cmd_vel`, sin remapping. El
-argumento `scan_filters_file` permite usar otra configuración de filtros. La web
+`laser_filters`), que limpia `/lidar/scan` y publica `/lidar/scan_filtered`, y
+`reactive_node`, que consume `/lidar/scan_filtered` y publica propuestas
+`geometry_msgs/msg/Twist` en `/obstacle_avoider/cmd_vel`. El launch remapea los
+topics del LiDAR bajo `/lidar` para que `rqt_graph` los agrupe; los nodos siguen
+en la raíz. El argumento `scan_filters_file` permite usar otra configuración de
+filtros. La web
 recibe las propuestas y solo las reenvía a `/hexapod/cmd_vel` en modo autónomo;
 en manual envía las velocidades de sus controles. La web arranca en manual y
 Stop cancela la autonomía. No hay nodo selector.
 
-Para ejecutar solo el evitador, con entrada `/scan_filtered` y salida `/obstacle_avoider/cmd_vel`:
+Para ejecutar solo el evitador, con entrada `/lidar/scan_filtered` y salida `/obstacle_avoider/cmd_vel`:
 
 ```bash
-ros2 run obstacle_avoider reactive_node
+ros2 run obstacle_avoider reactive_node --ros-args -r /scan_filtered:=/lidar/scan_filtered
 ```
